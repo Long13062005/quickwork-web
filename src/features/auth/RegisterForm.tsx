@@ -1,0 +1,1033 @@
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+import { motion, useReducedMotion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import { useAppSelector } from '../../hooks';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import QuickworkLogo from '../../assets/Quickwork_logo.png';
+import { useState, useRef, useEffect } from 'react';
+
+export default function RegisterForm() {
+  const { status } = useAppSelector((s) => s.auth);
+  const shouldReduceMotion = useReducedMotion();
+  const [globalErrors, setGlobalErrors] = useState<string[]>([]);
+  const [fieldStates, setFieldStates] = useState<{
+    [key: string]: { 
+      hasError: boolean; 
+      hasValue: boolean; 
+      isValid: boolean;
+      showSuccess: boolean;
+    }
+  }>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+
+  // Parallax effect for right panel
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+    
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [shouldReduceMotion]);
+
+  const evaluatePasswordStrength = (password: string): number => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+  };
+
+  const getPasswordStrengthColor = (strength: number): string => {
+    if (strength <= 1) return 'bg-red-400';
+    if (strength <= 2) return 'bg-orange-400';
+    if (strength <= 3) return 'bg-yellow-400';
+    if (strength <= 4) return 'bg-blue-400';
+    return 'bg-green-400';
+  };
+
+  const getPasswordStrengthText = (strength: number): string => {
+    if (strength <= 1) return 'Very Weak';
+    if (strength <= 2) return 'Weak';
+    if (strength <= 3) return 'Fair';
+    if (strength <= 4) return 'Good';
+    return 'Strong';
+  };
+
+  const schema = Yup.object({
+    firstName: Yup.string().min(2, 'First name must be at least 2 characters').required('First name is required'),
+    lastName: Yup.string().min(2, 'Last name must be at least 2 characters').required('Last name is required'),
+    email: Yup.string().email('Invalid Email').required('Email is required'),
+    password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+    confirmPassword: Yup.string()
+      .min(6, 'Password must be at least 6 characters')
+      .oneOf([Yup.ref('password')], 'Passwords must match')
+      .required('Please confirm your password'),
+    agreeToTerms: Yup.boolean().oneOf([true], 'You must agree to the terms and conditions'),
+  });
+
+  return (
+    <div className="fixed inset-0 flex flex-col lg:flex-row bg-white dark:bg-zinc-900 transition-colors overflow-hidden">
+      {/* Left side - Form (4/6 on desktop, full width on mobile) */}
+      <div className="w-full lg:w-2/3 flex items-center justify-center p-3 lg:p-4 bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900 overflow-y-auto">
+        <motion.div
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="w-full max-w-md my-2 lg:my-4"
+        >
+          <div className="text-center mb-3 lg:mb-4">
+            <div className="flex items-center justify-center mb-2 lg:mb-3">
+              <div className="flex items-center space-x-2">
+                <img 
+                  src={QuickworkLogo} 
+                  alt="Quickwork Logo" 
+                  className="w-5 h-5 lg:w-7 lg:h-7 object-contain"
+                />
+                <span className="text-lg lg:text-xl font-bold text-zinc-800 dark:text-white">Quickwork</span>
+              </div>
+            </div>
+            <h1 className="text-xl lg:text-2xl font-bold text-zinc-800 dark:text-white mb-1">
+              Join Quickwork
+            </h1>
+            <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400">Create your account and start your journey</p>
+          </div>
+
+          <Formik
+            initialValues={{ 
+              firstName: '', 
+              lastName: '', 
+              email: '', 
+              password: '', 
+              confirmPassword: '', 
+              agreeToTerms: false 
+            }}
+            validationSchema={schema}
+            onSubmit={async (values, { setSubmitting, resetForm }) => {
+              // Clear global errors
+              setGlobalErrors([]);
+              
+              try {
+                // Simulate registration API call
+                console.log('Registration data:', values);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                toast.success('Account created successfully! ✨');
+                resetForm();
+                // Reset field states
+                setFieldStates({});
+                setPasswordStrength(0);
+                // Redirect to login or dashboard
+              } catch (error: any) {
+                const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
+                setGlobalErrors([errorMessage]);
+                toast.error('Registration failed. Please try again. ❌');
+              }
+              setSubmitting(false);
+            }}
+          >
+            {({ isSubmitting, values, errors, touched, setFieldValue }) => {
+              // Update field states based on current form state
+              useEffect(() => {
+                const newFieldStates: typeof fieldStates = {};
+                const fields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
+                
+                fields.forEach(field => {
+                  const fieldValue = values[field as keyof typeof values] as string;
+                  const hasError = !!(errors[field as keyof typeof errors] && touched[field as keyof typeof touched]);
+                  const hasValue = !!fieldValue;
+                  const isValid = hasValue && !errors[field as keyof typeof errors];
+                  
+                  newFieldStates[field] = {
+                    hasError,
+                    hasValue,
+                    isValid,
+                    showSuccess: isValid && !!(touched[field as keyof typeof touched])
+                  };
+                });
+                
+                setFieldStates(newFieldStates);
+                
+                // Update password strength
+                if (values.password) {
+                  setPasswordStrength(evaluatePasswordStrength(values.password));
+                }
+              }, [values, errors, touched]);
+
+              return (
+                <Form ref={formRef} className="space-y-3 lg:space-y-4">
+                  {/* Global Error Summary */}
+                  {globalErrors.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ 
+                        duration: shouldReduceMotion ? 0.1 : 0.3,
+                        ease: 'easeOut'
+                      }}
+                      className="p-4 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg"
+                    >
+                      <div className="flex items-start">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.1, type: 'spring', stiffness: 500 }}
+                          className="flex-shrink-0 mt-0.5"
+                        >
+                          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 001.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                        </motion.div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                            Registration Error
+                          </h3>
+                          <ul className="mt-1 text-sm text-red-700 dark:text-red-300 space-y-1">
+                            {globalErrors.map((error, index) => (
+                              <li key={index}>{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* First Name and Last Name Row */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.1,
+                      ease: 'easeOut'
+                    }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                  >
+                    {/* First Name Field */}
+                    <div className="relative">
+                      <label htmlFor="firstName" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        First Name
+                      </label>
+                      <div className="relative">
+                        <Field
+                          id="firstName"
+                          name="firstName"
+                          type="text"
+                          autoComplete="given-name"
+                          placeholder="Enter your first name"
+                          className={`
+                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
+                            ${fieldStates.firstName?.hasError 
+                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
+                              : fieldStates.firstName?.isValid
+                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
+                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                            }
+                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
+                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
+                          `}
+                          disabled={isSubmitting || status === 'loading'}
+                        />
+                        
+                        {/* Field State Icons */}
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                          {fieldStates.firstName?.hasError && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                          {fieldStates.firstName?.showSuccess && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Animated Error Message */}
+                      <ErrorMessage name="firstName">
+                        {msg => (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -8, height: 0 }}
+                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                            className="text-red-500 text-sm mt-2 font-medium"
+                          >
+                            {msg}
+                          </motion.div>
+                        )}
+                      </ErrorMessage>
+                    </div>
+
+                    {/* Last Name Field */}
+                    <div className="relative">
+                      <label htmlFor="lastName" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        Last Name
+                      </label>
+                      <div className="relative">
+                        <Field
+                          id="lastName"
+                          name="lastName"
+                          type="text"
+                          autoComplete="family-name"
+                          placeholder="Enter your last name"
+                          className={`
+                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
+                            ${fieldStates.lastName?.hasError 
+                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
+                              : fieldStates.lastName?.isValid
+                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
+                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                            }
+                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
+                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
+                          `}
+                          disabled={isSubmitting || status === 'loading'}
+                        />
+                        
+                        {/* Field State Icons */}
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                          {fieldStates.lastName?.hasError && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                          {fieldStates.lastName?.showSuccess && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Animated Error Message */}
+                      <ErrorMessage name="lastName">
+                        {msg => (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -8, height: 0 }}
+                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                            className="text-red-500 text-sm mt-2 font-medium"
+                          >
+                            {msg}
+                          </motion.div>
+                        )}
+                      </ErrorMessage>
+                    </div>
+                  </motion.div>
+
+                  {/* Email Field */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.2,
+                      ease: 'easeOut'
+                    }}
+                    className="relative"
+                  >
+                    <label htmlFor="email" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Field
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        placeholder="Enter your email address"
+                        className={`
+                          w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
+                          ${fieldStates.email?.hasError 
+                            ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
+                            : fieldStates.email?.isValid
+                              ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
+                              : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                          }
+                          focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
+                          disabled:opacity-50 disabled:cursor-not-allowed
+                          text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
+                          hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
+                        `}
+                        disabled={isSubmitting || status === 'loading'}
+                      />
+                      
+                      {/* Field State Icons */}
+                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                        {fieldStates.email?.hasError && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          >
+                            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </motion.div>
+                        )}
+                        {fieldStates.email?.showSuccess && (
+                          <motion.div
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                          >
+                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Animated Error Message */}
+                    <ErrorMessage name="email">
+                      {msg => (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, height: 0 }}
+                          animate={{ opacity: 1, y: 0, height: 'auto' }}
+                          exit={{ opacity: 0, y: -8, height: 0 }}
+                          transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                          className="text-red-500 text-sm mt-2 font-medium"
+                        >
+                          {msg}
+                        </motion.div>
+                      )}
+                    </ErrorMessage>
+                  </motion.div>
+                
+                  {/* Password Fields Row */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.3,
+                      ease: 'easeOut'
+                    }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
+                  >
+                    {/* Password Field */}
+                    <div className="relative">
+                      <label htmlFor="password" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Field
+                          id="password"
+                          name="password"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="Create a strong password"
+                          className={`
+                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
+                            ${fieldStates.password?.hasError 
+                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
+                              : fieldStates.password?.isValid
+                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
+                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                            }
+                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
+                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
+                          `}
+                          disabled={isSubmitting || status === 'loading'}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setFieldValue('password', e.target.value);
+                            setPasswordStrength(evaluatePasswordStrength(e.target.value));
+                          }}
+                        />
+                        
+                        {/* Field State Icons */}
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                          {fieldStates.password?.hasError && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                          {fieldStates.password?.showSuccess && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Password Strength Indicator */}
+                      {values.password && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                          className="mt-1.5"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                              Password Strength: {getPasswordStrengthText(passwordStrength)}
+                            </span>
+                          </div>
+                          <div className="flex space-x-1">
+                            {[...Array(5)].map((_, i) => (
+                              <motion.div
+                                key={i}
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ 
+                                  delay: shouldReduceMotion ? 0 : i * 0.05,
+                                  type: 'spring',
+                                  stiffness: 500,
+                                  damping: 30
+                                }}
+                                className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
+                                  i < passwordStrength 
+                                    ? getPasswordStrengthColor(passwordStrength)
+                                    : 'bg-gray-200 dark:bg-zinc-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                      
+                      {/* Animated Error Message */}
+                      <ErrorMessage name="password">
+                        {msg => (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -8, height: 0 }}
+                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                            className="text-red-500 text-sm mt-2 font-medium"
+                          >
+                            {msg}
+                          </motion.div>
+                        )}
+                      </ErrorMessage>
+                    </div>
+
+                    {/* Confirm Password Field */}
+                    <div className="relative">
+                      <label htmlFor="confirmPassword" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Field
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="Confirm your password"
+                          className={`
+                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
+                            ${fieldStates.confirmPassword?.hasError 
+                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
+                              : fieldStates.confirmPassword?.isValid
+                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
+                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
+                            }
+                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
+                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
+                          `}
+                          disabled={isSubmitting || status === 'loading'}
+                        />
+                        
+                        {/* Field State Icons */}
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                          {fieldStates.confirmPassword?.hasError && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                          {fieldStates.confirmPassword?.showSuccess && (
+                            <motion.div
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </motion.div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Animated Error Message */}
+                      <ErrorMessage name="confirmPassword">
+                        {msg => (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -8, height: 0 }}
+                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                            className="text-red-500 text-sm mt-2 font-medium"
+                          >
+                            {msg}
+                          </motion.div>
+                        )}
+                      </ErrorMessage>
+                    </div>
+                  </motion.div>
+
+                  {/* Terms and Conditions */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.4,
+                      ease: 'easeOut'
+                    }}
+                    className="flex items-start space-x-3"
+                  >
+                    <div className="flex items-center h-6 mt-0.5">
+                      <Field
+                        id="agreeToTerms"
+                        name="agreeToTerms"
+                        type="checkbox"
+                        className="w-4 h-4 text-red-500 bg-gray-100 border-gray-300 rounded focus:ring-red-400 dark:focus:ring-red-500 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 transition-all duration-200"
+                      />
+                    </div>
+                    <div className="text-sm">
+                      <label htmlFor="agreeToTerms" className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                        I agree to the{' '}
+                        <motion.a 
+                          href="#" 
+                          className="text-red-500 dark:text-pink-400 hover:underline font-medium"
+                          whileHover={{ scale: shouldReduceMotion ? 1 : 1.02 }}
+                          transition={{ duration: 0.1 }}
+                        >
+                          Terms and Conditions
+                        </motion.a>
+                        {' '}and{' '}
+                        <motion.a 
+                          href="#" 
+                          className="text-red-500 dark:text-pink-400 hover:underline font-medium"
+                          whileHover={{ scale: shouldReduceMotion ? 1 : 1.02 }}
+                          transition={{ duration: 0.1 }}
+                        >
+                          Privacy Policy
+                        </motion.a>
+                      </label>
+                      <ErrorMessage name="agreeToTerms">
+                        {msg => (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8, height: 0 }}
+                            animate={{ opacity: 1, y: 0, height: 'auto' }}
+                            exit={{ opacity: 0, y: -8, height: 0 }}
+                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
+                            className="text-red-500 text-sm mt-1 font-medium"
+                          >
+                            {msg}
+                          </motion.div>
+                        )}
+                      </ErrorMessage>
+                    </div>
+                  </motion.div>
+                
+                  {/* Submit Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.5,
+                      ease: 'easeOut'
+                    }}
+                  >
+                    <motion.button
+                      type="submit"
+                      disabled={isSubmitting || status === 'loading'}
+                      className="group relative w-full py-3 px-5 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg overflow-hidden transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
+                      whileHover={shouldReduceMotion ? {} : { 
+                        scale: 1.02,
+                        boxShadow: '0 20px 25px -5px rgba(239, 68, 68, 0.3), 0 10px 10px -5px rgba(239, 68, 68, 0.2)'
+                      }}
+                      whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-pink-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      
+                      {/* Content */}
+                      <div className="relative z-10 flex items-center justify-center">
+                        {isSubmitting ? (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center"
+                          >
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                              className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full mr-2"
+                            />
+                            Creating Account...
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex items-center"
+                          >
+                            <span>Create Account</span>
+                            <motion.svg
+                              className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </motion.svg>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.button>
+                  </motion.div>
+
+                  {/* Divider */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.6,
+                      ease: 'easeOut'
+                    }}
+                    className="relative"
+                  >
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-200 dark:border-zinc-700"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="bg-white dark:bg-zinc-800 px-4 text-zinc-500 dark:text-zinc-400">or sign up with</span>
+                    </div>
+                  </motion.div>
+
+                  {/* OAuth Buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.7,
+                      ease: 'easeOut'
+                    }}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    <motion.button
+                      type="button"
+                      disabled
+                      className="group relative flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-400 cursor-not-allowed transition-all duration-200 overflow-hidden"
+                      whileHover={shouldReduceMotion ? {} : { scale: 0.98 }}
+                      transition={{ duration: 0.1 }}
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-800 dark:border-t-zinc-700"></div>
+                        Coming Soon
+                      </div>
+                    </motion.button>
+                    
+                    <motion.button
+                      type="button"
+                      disabled
+                      className="group relative flex items-center justify-center px-4 py-3 border border-gray-200 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 text-zinc-400 cursor-not-allowed transition-all duration-200 overflow-hidden"
+                      whileHover={shouldReduceMotion ? {} : { scale: 0.98 }}
+                      transition={{ duration: 0.1 }}
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                      </svg>
+                      
+                      {/* Tooltip */}
+                      <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-800 dark:bg-zinc-700 text-white text-sm px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-800 dark:border-t-zinc-700"></div>
+                        Coming Soon
+                      </div>
+                    </motion.button>
+                  </motion.div>
+                
+                  {/* Sign In Link */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: shouldReduceMotion ? 0.1 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.8,
+                      ease: 'easeOut'
+                    }}
+                    className="text-center"
+                  >
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      Already have an account?{' '}
+                      <motion.a 
+                        href="/auth/login" 
+                        className="text-red-500 dark:text-pink-400 hover:underline font-medium"
+                        whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+                        transition={{ duration: 0.1 }}
+                      >
+                        Sign in
+                      </motion.a>
+                    </p>
+                  </motion.div>
+                </Form>
+              );
+            }}
+          </Formik>
+        </motion.div>
+      </div>
+
+      {/* Right side - Enhanced Image with Parallax (2/6 on desktop, hidden on mobile) */}
+      <div className="hidden lg:block w-1/3 bg-gradient-to-br from-red-400 via-pink-400 to-orange-300 relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, scale: 1.1 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1,
+            y: shouldReduceMotion ? 0 : scrollY * 0.1
+          }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+          className="absolute inset-0 bg-gradient-to-br from-red-500/80 via-pink-500/80 to-orange-400/80"
+          style={{
+            transform: shouldReduceMotion ? 'none' : `translateY(${scrollY * 0.1}px)`
+          }}
+        />
+        
+        {/* Enhanced Floating sakura petals */}
+        <div className="absolute inset-0">
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute"
+              style={{
+                left: `${10 + Math.random() * 80}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              initial={{ 
+                y: -60, 
+                rotate: Math.random() * 360,
+                opacity: 0.3 + Math.random() * 0.4
+              }}
+              animate={{ 
+                y: '120vh', 
+                rotate: 360 + Math.random() * 720,
+                x: [
+                  0, 
+                  Math.random() * 40 - 20, 
+                  Math.random() * 60 - 30,
+                  Math.random() * 40 - 20,
+                  0
+                ],
+                opacity: [
+                  0.3 + Math.random() * 0.4,
+                  0.6 + Math.random() * 0.3,
+                  0.2 + Math.random() * 0.4,
+                  0
+                ]
+              }}
+              transition={{
+                duration: 10 + Math.random() * 8,
+                repeat: Infinity,
+                delay: Math.random() * 10,
+                ease: 'linear'
+              }}
+            >
+              <svg 
+                width={8 + Math.random() * 8} 
+                height={8 + Math.random() * 8} 
+                viewBox="0 0 32 32" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="drop-shadow-sm"
+              >
+                <path 
+                  d="M16 2C17.5 7 22 10 28 10C23 13 22 18 24 24C20 21 16 22 12 24C14 18 13 13 8 10C14 10 14.5 7 16 2Z" 
+                  fill={Math.random() > 0.5 ? "#fda4af" : "#fbb6ce"} 
+                  fillOpacity={0.4 + Math.random() * 0.3}
+                />
+              </svg>
+            </motion.div>
+          ))}
+        </div>
+        
+        {/* Background geometric patterns */}
+        <div className="absolute inset-0 opacity-10">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full border border-white/20"
+              style={{
+                width: `${100 + i * 50}px`,
+                height: `${100 + i * 50}px`,
+                left: `${20 + Math.random() * 60}%`,
+                top: `${10 + Math.random() * 80}%`,
+              }}
+              animate={{
+                rotate: 360,
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 20 + i * 5,
+                repeat: Infinity,
+                ease: 'linear'
+              }}
+            />
+          ))}
+        </div>
+        
+        <motion.div 
+          className="absolute inset-0 flex items-center justify-center p-8"
+          style={{
+            transform: shouldReduceMotion ? 'none' : `translateY(${scrollY * -0.05}px)`
+          }}
+        >
+          <div className="text-center text-white relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="mb-8"
+            >
+              <motion.h2 
+                className="text-4xl font-bold mb-4 tracking-wide"
+                animate={shouldReduceMotion ? {} : {
+                  textShadow: [
+                    '0 0 20px rgba(255,255,255,0.5)',
+                    '0 0 30px rgba(255,255,255,0.3)',
+                    '0 0 20px rgba(255,255,255,0.5)'
+                  ]
+                }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                始まりの時
+              </motion.h2>
+              <p className="text-lg opacity-90 leading-relaxed max-w-sm mx-auto">
+                Begin your journey with us. Where every new beginning blooms like sakura in spring.
+              </p>
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="relative"
+            >
+              <motion.div
+                className="w-48 h-48 mx-auto bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 shadow-2xl"
+                animate={shouldReduceMotion ? {} : {
+                  scale: [1, 1.05, 1],
+                  boxShadow: [
+                    '0 20px 40px rgba(0,0,0,0.3)',
+                    '0 25px 50px rgba(0,0,0,0.4)',
+                    '0 20px 40px rgba(0,0,0,0.3)'
+                  ]
+                }}
+                transition={{ duration: 4, repeat: Infinity }}
+                whileHover={shouldReduceMotion ? {} : { 
+                  scale: 1.1,
+                  rotate: 5,
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <motion.svg 
+                  width="80" 
+                  height="80" 
+                  viewBox="0 0 64 64" 
+                  fill="none" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="text-white drop-shadow-lg"
+                  animate={shouldReduceMotion ? {} : { rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                >
+                  <circle cx="32" cy="32" r="20" fill="currentColor" fillOpacity="0.3"/>
+                  <path d="M32 4C35 14 44 20 56 20C46 26 44 36 48 48C40 42 32 44 24 48C28 36 26 26 16 20C28 20 29 14 32 4Z" fill="currentColor" fillOpacity="0.8"/>
+                  <circle cx="32" cy="32" r="8" fill="currentColor" fillOpacity="0.9"/>
+                </motion.svg>
+              </motion.div>
+              
+              {/* Decorative rings */}
+              <motion.div
+                className="absolute inset-0 rounded-full border-2 border-white/20"
+                animate={shouldReduceMotion ? {} : { rotate: -360 }}
+                transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+              />
+              <motion.div
+                className="absolute inset-4 rounded-full border border-white/30"
+                animate={shouldReduceMotion ? {} : { rotate: 360 }}
+                transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+              />
+            </motion.div>
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
+        <ThemeToggle />
+      </div>
+    </div>
+  );
+}

@@ -1,35 +1,80 @@
+/**
+ * Registration form component
+ * Feature-based, modular registration form with email validation
+ */
+
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
-import * as Yup from 'yup';
 import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { useAppSelector, useAppDispatch } from '../../hooks';
-import { register, checkEmailExist, clearEmailCheck } from './AuthSlice';
-import { ThemeToggle } from '../../components/ThemeToggle';
-import QuickworkLogo from '../../assets/Quickwork_logo.png';
-import { useState, useRef, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 
-export default function RegisterForm() {
+// Redux hooks
+import { useAppSelector, useAppDispatch } from '../../hooks';
+import { register, checkEmailExist, login } from './AuthSlice';
+
+// Custom hooks
+import { useFormValidation } from '../../hooks/useFormValidation';
+import { usePasswordStrength } from '../../hooks/usePasswordStrength';
+import { useEmailCheck } from '../../hooks/useEmailCheck';
+
+// Components
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { FormField } from '../../components/common/FormField/FormField';
+import { PasswordStrengthIndicator } from '../../components/common/PasswordStrengthIndicator/PasswordStrengthIndicator';
+import { EmailCheckStatus } from '../../components/common/EmailCheckStatus/EmailCheckStatus';
+
+// Types, constants, and validation
+import type { RegisterFormValues, NavigationState } from '../../types/auth.types';
+import { registerValidationSchema } from '../../utils/validation.schemas';
+import { SUCCESS_MESSAGES, ERROR_MESSAGES, FORM_FIELDS } from '../../constants/auth.constants';
+
+// Assets
+import QuickworkLogo from '../../assets/Quickwork_logo.png';
+
+// Constants for field names to prevent re-creation on each render
+const REGISTRATION_FIELDS = [
+  FORM_FIELDS.EMAIL,
+  FORM_FIELDS.PASSWORD,
+  FORM_FIELDS.CONFIRM_PASSWORD,
+];
+
+/**
+ * Registration form component with modern UI and validation
+ * @returns JSX element containing the registration form
+ */
+export default function RegisterForm(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const location = useLocation();
   const { status, emailExists, emailCheckStatus } = useAppSelector((s) => s.auth);
-  const shouldReduceMotion = useReducedMotion();
-  const [globalErrors, setGlobalErrors] = useState<string[]>([]);
-  const [emailChecked, setEmailChecked] = useState(false);
-  const [fieldStates, setFieldStates] = useState<{
-    [key: string]: { 
-      hasError: boolean; 
-      hasValue: boolean; 
-      isValid: boolean;
-      showSuccess: boolean;
-    }
-  }>({});
+  const shouldReduceMotion = useReducedMotion() ?? false;
   const formRef = useRef<HTMLFormElement>(null);
-  const [passwordStrength, setPasswordStrength] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+  const [emailChecked, setEmailChecked] = useState(false);
 
   // Get pre-filled email from navigation state
-  const prefilledEmail = location.state?.email || '';
+  const navigationState = location.state as NavigationState;
+  const prefilledEmail = navigationState?.email || '';
+
+  // Custom hooks
+  const {
+    fieldStates,
+    globalErrors,
+    setGlobalErrors,
+    updateFieldStates,
+    clearAllErrors,
+  } = useFormValidation(REGISTRATION_FIELDS);
+
+  const {
+    strength: passwordStrength,
+    strengthText,
+    strengthColor,
+    updatePassword,
+    reset: resetPasswordStrength,
+  } = usePasswordStrength();
+
+  // Email checking hook
+  const { debouncedCheckEmail, clearCheck } = useEmailCheck(500);
 
   // Parallax effect for right panel
   useEffect(() => {
@@ -40,59 +85,112 @@ export default function RegisterForm() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [shouldReduceMotion]);
 
-  const evaluatePasswordStrength = (password: string): number => {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
-    return strength;
-  };
-
-  const getPasswordStrengthColor = (strength: number): string => {
-    if (strength <= 1) return 'bg-red-400';
-    if (strength <= 2) return 'bg-orange-400';
-    if (strength <= 3) return 'bg-yellow-400';
-    if (strength <= 4) return 'bg-blue-400';
-    return 'bg-green-400';
-  };
-
-  const getPasswordStrengthText = (strength: number): string => {
-    if (strength <= 1) return 'Very Weak';
-    if (strength <= 2) return 'Weak';
-    if (strength <= 3) return 'Fair';
-    if (strength <= 4) return 'Good';
-    return 'Strong';
-  };
-
-  // Function to check if email exists
-  const handleEmailCheck = async (email: string) => {
+  /**
+   * Handle email existence check with debouncing
+   * @param email - Email address to check
+   */
+  const handleEmailCheck = useCallback((email: string): void => {
     if (email && email.includes('@')) {
-      dispatch(clearEmailCheck());
-      await dispatch(checkEmailExist(email));
-      setEmailChecked(true);
+      debouncedCheckEmail(
+        email,
+        () => setEmailChecked(true), // onStart
+        (_exists) => {
+          // onComplete - _exists will be boolean or null
+          // The exists parameter is handled by EmailCheckStatus component
+          setEmailChecked(true);
+        }
+      );
     }
-  };
+  }, [debouncedCheckEmail]);
 
-  // Auto-check email when it's pre-filled or when user finishes typing
+  // Auto-check email when pre-filled
   useEffect(() => {
     if (prefilledEmail) {
       handleEmailCheck(prefilledEmail);
     }
   }, [prefilledEmail]);
 
-  const schema = Yup.object({
-    firstName: Yup.string().min(2, 'First name must be at least 2 characters').required('First name is required'),
-    lastName: Yup.string().min(2, 'Last name must be at least 2 characters').required('Last name is required'),
-    email: Yup.string().email('Invalid Email').required('Email is required'),
-    password: Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
-    confirmPassword: Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .oneOf([Yup.ref('password')], 'Passwords must match')
-      .required('Please confirm your password'),
-    agreeToTerms: Yup.boolean().oneOf([true], 'You must agree to the terms and conditions'),
-  });
+  /**
+   * Handle form submission with email existence validation
+   * @param values - Form values
+   * @param formikBag - Formik helper functions
+   */
+  const handleSubmit = async (
+    values: RegisterFormValues,
+    { setSubmitting, resetForm }: any
+  ): Promise<void> => {
+    clearAllErrors();
+    
+    try {
+      // First, check if email exists (if not already checked)
+      if (!emailChecked || emailCheckStatus !== 'succeeded') {
+        await handleEmailCheck(values.email);
+        
+        // Wait for email check to complete
+        const checkResult = await dispatch(checkEmailExist(values.email));
+        if (checkEmailExist.fulfilled.match(checkResult) && checkResult.payload === true) {
+          setGlobalErrors(['Email already exists. Please use a different email or sign in instead.']);
+          setSubmitting(false);
+          return;
+        }
+      }
+      
+      // If email exists, prevent registration
+      if (emailExists === true) {
+        setGlobalErrors(['Email already exists. Please use a different email or sign in instead.']);
+        setSubmitting(false);
+        return;
+      }
+      
+      // Proceed with registration if email is available
+      const registrationData = {
+        email: values.email,
+        password: values.password,
+      };
+      
+      const res = await dispatch(register(registrationData));
+      
+      if (register.fulfilled.match(res)) {
+        toast.success(SUCCESS_MESSAGES.REGISTER_SUCCESS);
+        
+        // Automatically log in the user after successful registration
+        try {
+          const loginData = {
+            email: values.email,
+            password: values.password,
+          };
+          
+          const loginRes = await dispatch(login(loginData));
+          
+          if (login.fulfilled.match(loginRes)) {
+            toast.success('Welcome to Quickwork! 🎉');
+            // The user will be automatically redirected by the auth system
+          } else {
+            // Registration succeeded but login failed - this is unusual but we'll handle it
+            toast.error('Account created but login failed. Please try signing in manually.');
+          }
+        } catch (loginErr: any) {
+          console.error('Auto-login failed:', loginErr);
+          toast.error('Account created but auto-login failed. Please sign in manually.');
+        }
+        
+        resetForm();
+        resetPasswordStrength();
+        setEmailChecked(false);
+        clearCheck(); // Clear email check state
+      } else {
+        const errorMessage = res.payload || ERROR_MESSAGES.REGISTER_FAILED;
+        setGlobalErrors([errorMessage]);
+        toast.error('Registration failed ❌');
+      }
+    } catch (err: any) {
+      const errorMessage = err?.response?.data?.message || ERROR_MESSAGES.REGISTER_FAILED;
+      setGlobalErrors([errorMessage]);
+      toast.error('Registration failed. Please try again. ❌');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 flex flex-col lg:flex-row bg-white dark:bg-zinc-900 transition-colors overflow-hidden">
@@ -121,76 +219,25 @@ export default function RegisterForm() {
             <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400">Create your account and start your journey</p>
           </div>
 
+          {/* Registration Form */}
           <Formik
             initialValues={{ 
-              firstName: '', 
-              lastName: '', 
               email: prefilledEmail, 
               password: '', 
               confirmPassword: '', 
               agreeToTerms: false 
             }}
-            validationSchema={schema}
-            onSubmit={async (values, { setSubmitting, resetForm }) => {
-              // Clear global errors
-              setGlobalErrors([]);
-              
-              try {
-                // Prepare registration data
-                const registrationData = {
-                  email: values.email,
-                  password: values.password,
-                  fullName: `${values.firstName} ${values.lastName}`.trim()
-                };
-                
-                const res = await dispatch(register(registrationData));
-                
-                if (register.fulfilled.match(res)) {
-                  toast.success('Account created successfully! ✨');
-                  resetForm();
-                  // Reset field states
-                  setFieldStates({});
-                  setPasswordStrength(0);
-                } else {
-                  const errorMessage = res.payload || 'Registration failed. Please try again.';
-                  setGlobalErrors([errorMessage]);
-                  toast.error('Registration failed ❌');
-                }
-              } catch (error: any) {
-                const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
-                setGlobalErrors([errorMessage]);
-                toast.error('Registration failed. Please try again. ❌');
-              }
-              setSubmitting(false);
-            }}
+            validationSchema={registerValidationSchema}
+            onSubmit={handleSubmit}
           >
             {({ isSubmitting, values, errors, touched, setFieldValue }) => {
-              // Update field states based on current form state
+              // Update field states and password strength
               useEffect(() => {
-                const newFieldStates: typeof fieldStates = {};
-                const fields = ['firstName', 'lastName', 'email', 'password', 'confirmPassword'];
-                
-                fields.forEach(field => {
-                  const fieldValue = values[field as keyof typeof values] as string;
-                  const hasError = !!(errors[field as keyof typeof errors] && touched[field as keyof typeof touched]);
-                  const hasValue = !!fieldValue;
-                  const isValid = hasValue && !errors[field as keyof typeof errors];
-                  
-                  newFieldStates[field] = {
-                    hasError,
-                    hasValue,
-                    isValid,
-                    showSuccess: isValid && !!(touched[field as keyof typeof touched])
-                  };
-                });
-                
-                setFieldStates(newFieldStates);
-                
-                // Update password strength
+                updateFieldStates(values, errors, touched);
                 if (values.password) {
-                  setPasswordStrength(evaluatePasswordStrength(values.password));
+                  updatePassword(values.password);
                 }
-              }, [values, errors, touched]);
+              }, [values, errors, touched, updateFieldStates, updatePassword]);
 
               return (
                 <Form ref={formRef} className="space-y-3 lg:space-y-4">
@@ -231,7 +278,7 @@ export default function RegisterForm() {
                     </motion.div>
                   )}
 
-                  {/* First Name and Last Name Row */}
+                  {/* Email Field */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -240,152 +287,33 @@ export default function RegisterForm() {
                       delay: shouldReduceMotion ? 0 : 0.1,
                       ease: 'easeOut'
                     }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-3"
                   >
-                    {/* First Name Field */}
-                    <div className="relative">
-                      <label htmlFor="firstName" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        First Name
-                      </label>
-                      <div className="relative">
-                        <Field
-                          id="firstName"
-                          name="firstName"
-                          type="text"
-                          autoComplete="given-name"
-                          placeholder="Enter your first name"
-                          className={`
-                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
-                            ${fieldStates.firstName?.hasError 
-                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
-                              : fieldStates.firstName?.isValid
-                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
-                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                            }
-                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
-                          `}
-                          disabled={isSubmitting || status === 'loading'}
-                        />
-                        
-                        {/* Field State Icons */}
-                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                          {fieldStates.firstName?.hasError && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                          {fieldStates.firstName?.showSuccess && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Animated Error Message */}
-                      <ErrorMessage name="firstName">
-                        {msg => (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8, height: 0 }}
-                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                            exit={{ opacity: 0, y: -8, height: 0 }}
-                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                            className="text-red-500 text-sm mt-2 font-medium"
-                          >
-                            {msg}
-                          </motion.div>
-                        )}
-                      </ErrorMessage>
-                    </div>
-
-                    {/* Last Name Field */}
-                    <div className="relative">
-                      <label htmlFor="lastName" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Last Name
-                      </label>
-                      <div className="relative">
-                        <Field
-                          id="lastName"
-                          name="lastName"
-                          type="text"
-                          autoComplete="family-name"
-                          placeholder="Enter your last name"
-                          className={`
-                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
-                            ${fieldStates.lastName?.hasError 
-                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
-                              : fieldStates.lastName?.isValid
-                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
-                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                            }
-                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
-                          `}
-                          disabled={isSubmitting || status === 'loading'}
-                        />
-                        
-                        {/* Field State Icons */}
-                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                          {fieldStates.lastName?.hasError && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                          {fieldStates.lastName?.showSuccess && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Animated Error Message */}
-                      <ErrorMessage name="lastName">
-                        {msg => (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8, height: 0 }}
-                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                            exit={{ opacity: 0, y: -8, height: 0 }}
-                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                            className="text-red-500 text-sm mt-2 font-medium"
-                          >
-                            {msg}
-                          </motion.div>
-                        )}
-                      </ErrorMessage>
-                    </div>
+                    <FormField
+                      name={FORM_FIELDS.EMAIL}
+                      type="email"
+                      label="Email Address"
+                      placeholder="Enter your email address"
+                      autoComplete="email"
+                      disabled={isSubmitting || status === 'loading'}
+                      fieldState={fieldStates[FORM_FIELDS.EMAIL]}
+                      shouldReduceMotion={shouldReduceMotion}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        const email = e.target.value;
+                        if (email && email !== prefilledEmail && email.includes('@')) {
+                          handleEmailCheck(email);
+                        }
+                      }}
+                    />
+                    
+                    {/* Email Check Status */}
+                    <EmailCheckStatus
+                      status={emailCheckStatus}
+                      emailExists={emailExists}
+                      shouldReduceMotion={shouldReduceMotion}
+                    />
                   </motion.div>
 
-                  {/* Email Field */}
+                  {/* Password Fields Row */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -394,276 +322,45 @@ export default function RegisterForm() {
                       delay: shouldReduceMotion ? 0 : 0.2,
                       ease: 'easeOut'
                     }}
-                    className="relative"
-                  >
-                    <label htmlFor="email" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Field
-                        id="email"
-                        name="email"
-                        type="email"
-                        autoComplete="email"
-                        placeholder="Enter your email address"
-                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-                          const email = e.target.value;
-                          if (email && email !== prefilledEmail) {
-                            handleEmailCheck(email);
-                          }
-                        }}
-                        className={`
-                          w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
-                          ${fieldStates.email?.hasError 
-                            ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
-                            : fieldStates.email?.isValid
-                              ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
-                              : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                          }
-                          focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
-                          disabled:opacity-50 disabled:cursor-not-allowed
-                          text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-                          hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
-                        `}
-                        disabled={isSubmitting || status === 'loading'}
-                      />
-                      
-                      {/* Field State Icons */}
-                      <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                        {fieldStates.email?.hasError && (
-                          <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                          >
-                            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </motion.div>
-                        )}
-                        {fieldStates.email?.showSuccess && (
-                          <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                          >
-                            <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          </motion.div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Animated Error Message */}
-                    <ErrorMessage name="email">
-                      {msg => (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8, height: 0 }}
-                          animate={{ opacity: 1, y: 0, height: 'auto' }}
-                          exit={{ opacity: 0, y: -8, height: 0 }}
-                          transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                          className="text-red-500 text-sm mt-2 font-medium"
-                        >
-                          {msg}
-                        </motion.div>
-                      )}
-                    </ErrorMessage>
-                  </motion.div>
-                
-                  {/* Password Fields Row */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.3,
-                      ease: 'easeOut'
-                    }}
                     className="grid grid-cols-1 lg:grid-cols-2 gap-3"
                   >
-                    {/* Password Field */}
                     <div className="relative">
-                      <label htmlFor="password" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Password
-                      </label>
-                      <div className="relative">
-                        <Field
-                          id="password"
-                          name="password"
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="Create a strong password"
-                          className={`
-                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
-                            ${fieldStates.password?.hasError 
-                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
-                              : fieldStates.password?.isValid
-                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
-                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                            }
-                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
-                          `}
-                          disabled={isSubmitting || status === 'loading'}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            setFieldValue('password', e.target.value);
-                            setPasswordStrength(evaluatePasswordStrength(e.target.value));
-                          }}
-                        />
-                        
-                        {/* Field State Icons */}
-                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                          {fieldStates.password?.hasError && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                          {fieldStates.password?.showSuccess && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
+                      <FormField
+                        name={FORM_FIELDS.PASSWORD}
+                        type="password"
+                        label="Password"
+                        placeholder="Create a strong password"
+                        autoComplete="new-password"
+                        disabled={isSubmitting || status === 'loading'}
+                        fieldState={fieldStates[FORM_FIELDS.PASSWORD]}
+                        shouldReduceMotion={shouldReduceMotion}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setFieldValue('password', e.target.value);
+                          updatePassword(e.target.value);
+                        }}
+                      />
                       
                       {/* Password Strength Indicator */}
                       {values.password && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                          className="mt-1.5"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                              Password Strength: {getPasswordStrengthText(passwordStrength)}
-                            </span>
-                          </div>
-                          <div className="flex space-x-1">
-                            {[...Array(5)].map((_, i) => (
-                              <motion.div
-                                key={i}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ 
-                                  delay: shouldReduceMotion ? 0 : i * 0.05,
-                                  type: 'spring',
-                                  stiffness: 500,
-                                  damping: 30
-                                }}
-                                className={`h-1 flex-1 rounded-full transition-colors duration-200 ${
-                                  i < passwordStrength 
-                                    ? getPasswordStrengthColor(passwordStrength)
-                                    : 'bg-gray-200 dark:bg-zinc-700'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
+                        <PasswordStrengthIndicator
+                          strength={passwordStrength}
+                          strengthText={strengthText}
+                          strengthColor={strengthColor}
+                          shouldReduceMotion={shouldReduceMotion}
+                        />
                       )}
-                      
-                      {/* Animated Error Message */}
-                      <ErrorMessage name="password">
-                        {msg => (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8, height: 0 }}
-                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                            exit={{ opacity: 0, y: -8, height: 0 }}
-                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                            className="text-red-500 text-sm mt-2 font-medium"
-                          >
-                            {msg}
-                          </motion.div>
-                        )}
-                      </ErrorMessage>
                     </div>
 
-                    {/* Confirm Password Field */}
-                    <div className="relative">
-                      <label htmlFor="confirmPassword" className="block text-xs lg:text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                        Confirm Password
-                      </label>
-                      <div className="relative">
-                        <Field
-                          id="confirmPassword"
-                          name="confirmPassword"
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="Confirm your password"
-                          className={`
-                            w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
-                            ${fieldStates.confirmPassword?.hasError 
-                              ? 'border-red-400 dark:border-red-500 bg-red-50 dark:bg-red-950/20' 
-                              : fieldStates.confirmPassword?.isValid
-                                ? 'border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-950/20'
-                                : 'border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-800'
-                            }
-                            focus:ring-2 focus:ring-red-400/20 dark:focus:ring-pink-400/20
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                            text-zinc-800 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500
-                            hover:border-red-300 dark:hover:border-pink-400 hover:shadow-sm
-                          `}
-                          disabled={isSubmitting || status === 'loading'}
-                        />
-                        
-                        {/* Field State Icons */}
-                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                          {fieldStates.confirmPassword?.hasError && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                          {fieldStates.confirmPassword?.showSuccess && (
-                            <motion.div
-                              initial={{ scale: 0, rotate: -180 }}
-                              animate={{ scale: 1, rotate: 0 }}
-                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                            >
-                              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                            </motion.div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Animated Error Message */}
-                      <ErrorMessage name="confirmPassword">
-                        {msg => (
-                          <motion.div
-                            initial={{ opacity: 0, y: -8, height: 0 }}
-                            animate={{ opacity: 1, y: 0, height: 'auto' }}
-                            exit={{ opacity: 0, y: -8, height: 0 }}
-                            transition={{ duration: shouldReduceMotion ? 0.1 : 0.2 }}
-                            className="text-red-500 text-sm mt-2 font-medium"
-                          >
-                            {msg}
-                          </motion.div>
-                        )}
-                      </ErrorMessage>
-                    </div>
+                    <FormField
+                      name={FORM_FIELDS.CONFIRM_PASSWORD}
+                      type="password"
+                      label="Confirm Password"
+                      placeholder="Confirm your password"
+                      autoComplete="new-password"
+                      disabled={isSubmitting || status === 'loading'}
+                      fieldState={fieldStates[FORM_FIELDS.CONFIRM_PASSWORD]}
+                      shouldReduceMotion={shouldReduceMotion}
+                    />
                   </motion.div>
 
                   {/* Terms and Conditions */}
@@ -672,7 +369,7 @@ export default function RegisterForm() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
                       duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.4,
+                      delay: shouldReduceMotion ? 0 : 0.3,
                       ease: 'easeOut'
                     }}
                     className="flex items-start space-x-3"
@@ -728,13 +425,18 @@ export default function RegisterForm() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
                       duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.5,
+                      delay: shouldReduceMotion ? 0 : 0.4,
                       ease: 'easeOut'
                     }}
                   >
                     <motion.button
                       type="submit"
-                      disabled={isSubmitting || status === 'loading'}
+                      disabled={
+                        isSubmitting || 
+                        status === 'loading' || 
+                        emailCheckStatus === 'loading' || 
+                        emailExists === true
+                      }
                       className="group relative w-full py-3 px-5 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg overflow-hidden transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm lg:text-base"
                       whileHover={shouldReduceMotion ? {} : { 
                         scale: 1.02,
@@ -759,7 +461,7 @@ export default function RegisterForm() {
                               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                               className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full mr-2"
                             />
-                            Creating Account...
+                            Creating Account & Signing In...
                           </motion.div>
                         ) : (
                           <motion.div
@@ -767,7 +469,7 @@ export default function RegisterForm() {
                             animate={{ opacity: 1 }}
                             className="flex items-center"
                           >
-                            <span>Create Account</span>
+                            <span>Create Account & Sign In</span>
                             <motion.svg
                               className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform duration-200"
                               fill="none"
@@ -788,7 +490,7 @@ export default function RegisterForm() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
                       duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.6,
+                      delay: shouldReduceMotion ? 0 : 0.5,
                       ease: 'easeOut'
                     }}
                     className="relative"
@@ -807,7 +509,7 @@ export default function RegisterForm() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
                       duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.7,
+                      delay: shouldReduceMotion ? 0 : 0.6,
                       ease: 'easeOut'
                     }}
                     className="grid grid-cols-2 gap-3"
@@ -858,7 +560,7 @@ export default function RegisterForm() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
                       duration: shouldReduceMotion ? 0.1 : 0.3,
-                      delay: shouldReduceMotion ? 0 : 0.6,
+                      delay: shouldReduceMotion ? 0 : 0.5,
                       ease: 'easeOut'
                     }}
                     className="text-center"
@@ -882,10 +584,10 @@ export default function RegisterForm() {
                           <svg className="w-4 h-4 text-blue-500 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 mr-2">Email exists.</span>
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 mr-2">Account exists with this email.</span>
                           <Link 
                             to="/auth/login" 
-                            state={{ email: prefilledEmail }}
+                            state={{ email: values.email || prefilledEmail }}
                             className="inline-flex items-center text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
                           >
                             <motion.span
@@ -907,7 +609,7 @@ export default function RegisterForm() {
                           <svg className="w-4 h-4 text-green-500 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-xs font-medium text-green-700 dark:text-green-300">Email available. Ready to proceed!</span>
+                          <span className="text-xs font-medium text-green-700 dark:text-green-300">Email available. You'll be automatically signed in after registration!</span>
                         </div>
                       </motion.div>
                     ) : (

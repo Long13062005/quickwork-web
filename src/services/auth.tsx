@@ -1,7 +1,7 @@
 import { api } from '../services/api';
 
 export interface LoginPayload { email: string; password: string; }
-export interface RegisterPayload { email: string; password: string; fullName: string; }
+export interface RegisterPayload { email: string; password: string; }
 export interface UserProfile { id: number; email: string; fullName: string; }
 
 export const authAPI = {

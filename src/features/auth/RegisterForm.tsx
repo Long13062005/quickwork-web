@@ -2,15 +2,20 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { useAppSelector } from '../../hooks';
+import { useAppSelector, useAppDispatch } from '../../hooks';
+import { register, checkEmailExist, clearEmailCheck } from './AuthSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
 import { useState, useRef, useEffect } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 
 export default function RegisterForm() {
-  const { status } = useAppSelector((s) => s.auth);
+  const dispatch = useAppDispatch();
+  const location = useLocation();
+  const { status, emailExists, emailCheckStatus } = useAppSelector((s) => s.auth);
   const shouldReduceMotion = useReducedMotion();
   const [globalErrors, setGlobalErrors] = useState<string[]>([]);
+  const [emailChecked, setEmailChecked] = useState(false);
   const [fieldStates, setFieldStates] = useState<{
     [key: string]: { 
       hasError: boolean; 
@@ -22,6 +27,9 @@ export default function RegisterForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+
+  // Get pre-filled email from navigation state
+  const prefilledEmail = location.state?.email || '';
 
   // Parallax effect for right panel
   useEffect(() => {
@@ -57,6 +65,22 @@ export default function RegisterForm() {
     if (strength <= 4) return 'Good';
     return 'Strong';
   };
+
+  // Function to check if email exists
+  const handleEmailCheck = async (email: string) => {
+    if (email && email.includes('@')) {
+      dispatch(clearEmailCheck());
+      await dispatch(checkEmailExist(email));
+      setEmailChecked(true);
+    }
+  };
+
+  // Auto-check email when it's pre-filled or when user finishes typing
+  useEffect(() => {
+    if (prefilledEmail) {
+      handleEmailCheck(prefilledEmail);
+    }
+  }, [prefilledEmail]);
 
   const schema = Yup.object({
     firstName: Yup.string().min(2, 'First name must be at least 2 characters').required('First name is required'),
@@ -101,7 +125,7 @@ export default function RegisterForm() {
             initialValues={{ 
               firstName: '', 
               lastName: '', 
-              email: '', 
+              email: prefilledEmail, 
               password: '', 
               confirmPassword: '', 
               agreeToTerms: false 
@@ -112,15 +136,26 @@ export default function RegisterForm() {
               setGlobalErrors([]);
               
               try {
-                // Simulate registration API call
-                console.log('Registration data:', values);
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                toast.success('Account created successfully! ✨');
-                resetForm();
-                // Reset field states
-                setFieldStates({});
-                setPasswordStrength(0);
-                // Redirect to login or dashboard
+                // Prepare registration data
+                const registrationData = {
+                  email: values.email,
+                  password: values.password,
+                  fullName: `${values.firstName} ${values.lastName}`.trim()
+                };
+                
+                const res = await dispatch(register(registrationData));
+                
+                if (register.fulfilled.match(res)) {
+                  toast.success('Account created successfully! ✨');
+                  resetForm();
+                  // Reset field states
+                  setFieldStates({});
+                  setPasswordStrength(0);
+                } else {
+                  const errorMessage = res.payload || 'Registration failed. Please try again.';
+                  setGlobalErrors([errorMessage]);
+                  toast.error('Registration failed ❌');
+                }
               } catch (error: any) {
                 const errorMessage = error?.response?.data?.message || 'Registration failed. Please try again.';
                 setGlobalErrors([errorMessage]);
@@ -371,6 +406,12 @@ export default function RegisterForm() {
                         type="email"
                         autoComplete="email"
                         placeholder="Enter your email address"
+                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                          const email = e.target.value;
+                          if (email && email !== prefilledEmail) {
+                            handleEmailCheck(email);
+                          }
+                        }}
                         className={`
                           w-full px-3 py-2.5 text-sm lg:text-base border rounded-lg outline-none transition-all duration-200
                           ${fieldStates.email?.hasError 
@@ -811,28 +852,80 @@ export default function RegisterForm() {
                     </motion.button>
                   </motion.div>
                 
-                  {/* Sign In Link */}
+                  {/* Conditional Navigation Link - Compact */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ 
-                      duration: shouldReduceMotion ? 0.1 : 0.4,
-                      delay: shouldReduceMotion ? 0 : 0.8,
+                      duration: shouldReduceMotion ? 0.1 : 0.3,
+                      delay: shouldReduceMotion ? 0 : 0.6,
                       ease: 'easeOut'
                     }}
                     className="text-center"
                   >
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Already have an account?{' '}
-                      <motion.a 
-                        href="/auth/login" 
-                        className="text-red-500 dark:text-pink-400 hover:underline font-medium"
-                        whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
-                        transition={{ duration: 0.1 }}
+                    {emailCheckStatus === 'loading' ? (
+                      <div className="flex items-center justify-center py-1">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                          className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full mr-1.5"
+                        />
+                        <span className="text-xs text-zinc-500 dark:text-zinc-500">Verifying...</span>
+                      </div>
+                    ) : emailChecked && emailExists ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-md"
                       >
-                        Sign in
-                      </motion.a>
-                    </p>
+                        <div className="flex items-center justify-center">
+                          <svg className="w-4 h-4 text-blue-500 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-medium text-blue-700 dark:text-blue-300 mr-2">Email exists.</span>
+                          <Link 
+                            to="/auth/login" 
+                            state={{ email: prefilledEmail }}
+                            className="inline-flex items-center text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 transition-colors"
+                          >
+                            <motion.span
+                              whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                              whileTap={shouldReduceMotion ? {} : { scale: 0.95 }}
+                            >
+                              Sign in instead →
+                            </motion.span>
+                          </Link>
+                        </div>
+                      </motion.div>
+                    ) : emailChecked && emailExists === false ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="px-3 py-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/50 rounded-md"
+                      >
+                        <div className="flex items-center justify-center">
+                          <svg className="w-4 h-4 text-green-500 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-medium text-green-700 dark:text-green-300">Email available. Ready to proceed!</span>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <p className="text-xs text-zinc-500 dark:text-zinc-500 py-1">
+                        Already have an account?{' '}
+                        <Link 
+                          to="/auth/login" 
+                          className="text-red-500 dark:text-pink-400 hover:underline font-medium"
+                        >
+                          <motion.span
+                            whileHover={shouldReduceMotion ? {} : { scale: 1.05 }}
+                            transition={{ duration: 0.1 }}
+                          >
+                            Sign in
+                          </motion.span>
+                        </Link>
+                      </p>
+                    )}
                   </motion.div>
                 </Form>
               );

@@ -6,11 +6,16 @@ import { useAppDispatch, useAppSelector } from '../../hooks';
 import { login } from './AuthSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
+import { useLocation } from 'react-router-dom';
 
 export default function LoginForm() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const { status, error } = useAppSelector((s) => s.auth);
   const shouldReduceMotion = useReducedMotion();
+
+  // Get pre-filled email from navigation state
+  const prefilledEmail = location.state?.email || '';
 
   const schema = Yup.object({
     email: Yup.string().email('Invalid Email').required('Email is required'),
@@ -73,7 +78,7 @@ export default function LoginForm() {
           </motion.div>
 
           <Formik
-            initialValues={{ email: '', password: '' }}
+            initialValues={{ email: prefilledEmail, password: '' }}
             validationSchema={schema}
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               const res = await dispatch(login(values));
@@ -103,7 +108,7 @@ export default function LoginForm() {
                       <div>
                         <h4 className="text-xs lg:text-sm font-medium text-red-800 dark:text-red-200">Please fix the following errors:</h4>
                         <ul className="mt-1 text-xs text-red-700 dark:text-red-300 list-disc list-inside">
-                          {errors.email && touched.email && <li>{errors.email}</li>}
+                          {errors.email && touched.email && <li>{errors.email as string}</li>}
                           {errors.password && touched.password && <li>{errors.password}</li>}
                         </ul>
                       </div>

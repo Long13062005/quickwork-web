@@ -3,13 +3,15 @@ import * as Yup from 'yup';
 import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../hooks';
-import { login } from './AuthSlice';
+import { checkEmailExist, clearEmailCheck } from './AuthSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
+import { useNavigate } from 'react-router-dom';
 
 export default function BeforeForm() {
   const dispatch = useAppDispatch();
-  const { status, error } = useAppSelector((s) => s.auth);
+  const navigate = useNavigate();
+  const { emailCheckStatus, error } = useAppSelector((s) => s.auth);
   const shouldReduceMotion = useReducedMotion();
 
   const schema = Yup.object({
@@ -60,7 +62,7 @@ export default function BeforeForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Welcome
+              Get Started
             </motion.h1>
             <motion.p 
               className="text-zinc-600 dark:text-zinc-400 text-xs lg:text-sm"
@@ -68,20 +70,34 @@ export default function BeforeForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Sign in to your account or create a new one
+              Enter your email to continue to your account
             </motion.p>
           </motion.div>
 
         <Formik
-          initialValues={{ email: '', password: '' }}
+          initialValues={{ email: '' }}
           validationSchema={schema}
           onSubmit={async (values, { setSubmitting, resetForm }) => {
-            const res = await dispatch(login(values));
-            if (login.fulfilled.match(res)) {
-              toast.success('Login successful ✨');
+            // Clear previous email check state
+            dispatch(clearEmailCheck());
+            
+            // Check if email exists
+            const res = await dispatch(checkEmailExist(values.email));
+            
+            if (checkEmailExist.fulfilled.match(res)) {
+              console.log('Email check result:', res.payload);
+              if (res.payload) {
+                // Email exists, navigate to login
+                toast.success('Redirecting to login... 🔑');
+                navigate('/auth/login', { state: { email: values.email } });
+              } else {
+                // Email doesn't exist, navigate to register
+                toast.success('Redirecting to registration... ✨');
+                navigate('/auth/register', { state: { email: values.email } });
+              }
               resetForm();
             } else {
-              toast.error(res.payload || 'Login failed ❌');
+              toast.error(res.payload || 'Email check failed ❌');
             }
             setSubmitting(false);
           }}
@@ -131,7 +147,7 @@ export default function BeforeForm() {
                             ? 'border-green-500 dark:border-green-500 focus:border-green-500 focus:ring-green-500/20 bg-green-50 dark:bg-green-900/10'
                             : 'border-pink-200 dark:border-zinc-700 focus:border-red-400 dark:focus:border-red-400 focus:ring-red-400/20'
                         }`}
-                        disabled={isSubmitting || status === 'loading'}
+                        disabled={isSubmitting || emailCheckStatus === 'loading'}
                         whileFocus={shouldReduceMotion ? {} : { 
                           scale: 1.02,
                           boxShadow: meta.touched && meta.error 
@@ -170,17 +186,17 @@ export default function BeforeForm() {
                       )}
                       <motion.button
                         type="submit"
-                        disabled={isSubmitting || status === 'loading' || Object.keys(errors).length > 0}
+                        disabled={isSubmitting || emailCheckStatus === 'loading' || Object.keys(errors).length > 0}
                         className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center transition-all duration-300 shadow-md ${
                           Object.keys(errors).length > 0 || !field.value
                             ? 'bg-gray-400 dark:bg-gray-600 text-gray-300 dark:text-gray-400 cursor-not-allowed'
                             : 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600'
-                        } ${(isSubmitting || status === 'loading') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${(isSubmitting || emailCheckStatus === 'loading') ? 'opacity-50 cursor-not-allowed' : ''}`}
                         whileHover={shouldReduceMotion || Object.keys(errors).length > 0 || !field.value ? {} : { scale: 1.05 }}
                         whileTap={shouldReduceMotion || Object.keys(errors).length > 0 || !field.value ? {} : { scale: 0.95 }}
                         transition={{ duration: 0.2 }}
                       >
-                        {status === 'loading' ? (
+                        {emailCheckStatus === 'loading' ? (
                           <motion.div
                             className="w-3 h-3 border-2 border-white border-t-transparent rounded-full"
                             animate={{ rotate: 360 }}

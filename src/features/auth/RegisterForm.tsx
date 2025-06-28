@@ -7,7 +7,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { authFlowSession } from '../../utils/authFlowSession';
 
 // Redux hooks
 import { useAppSelector, useAppDispatch } from '../../hooks';
@@ -46,6 +47,7 @@ const REGISTRATION_FIELDS = [
 export default function RegisterForm(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const { status, emailExists, emailCheckStatus } = useAppSelector((s) => s.auth);
   const shouldReduceMotion = useReducedMotion() ?? false;
   const formRef = useRef<HTMLFormElement>(null);
@@ -164,7 +166,12 @@ export default function RegisterForm(): React.JSX.Element {
           
           if (login.fulfilled.match(loginRes)) {
             toast.success('Welcome to Quickwork! 🎉');
-            // The user will be automatically redirected by the auth system
+            
+            // Clear auth flow session after successful registration and login
+            authFlowSession.clearSession();
+            
+            // Navigate to role selection page after successful login
+            navigate('/auth/choose-role', { replace: true });
           } else {
             // Registration succeeded but login failed - this is unusual but we'll handle it
             toast.error('Account created but login failed. Please try signing in manually.');

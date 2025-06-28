@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 
 export const PageLoader = () => {
-  const [isDark, setIsDark] = useState(() => {
+  const [isDark] = useState(() => {
       // Initialize from localStorage or system preference
       if (typeof window !== 'undefined') {
         return localStorage.getItem('theme') === 'dark' ||

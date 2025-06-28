@@ -1,7 +1,8 @@
-import { createContext, useState, useEffect, FC, ReactNode } from 'react';
-import {authService} from '../services/auth.tsx'; // Adjust the import path as necessary
+import { createContext, useState, useEffect } from 'react';
+import type { FC, ReactNode } from 'react';
+import { authAPI, type UserProfile } from '../services/auth'; // Adjust the import path as necessary
 interface AuthContextType {
-  user: any;
+  user: UserProfile | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -17,12 +18,12 @@ export const AuthContext = createContext<AuthContextType>({
 });
 
 const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await authService.getCurrentUser();
+      const response = await authAPI.getProfile();
       setUser(response.data);
       setIsAuthenticated(true);
     } catch (error) {
@@ -36,17 +37,17 @@ const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    await authService.login(email, password);
+    await authAPI.login({ email, password });
     await fetchCurrentUser();
   };
 
   const register = async (email: string, password: string) => {
-    await authService.register(email, password);
+    await authAPI.register({ email, password });
     await fetchCurrentUser();
   };
 
   const logout = async () => {
-    await authService.logout();
+    await authAPI.logout();
     setUser(null);
     setIsAuthenticated(false);
   };

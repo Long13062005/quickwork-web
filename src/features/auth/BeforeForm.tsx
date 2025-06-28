@@ -7,6 +7,7 @@ import { checkEmailExist, clearEmailCheck } from './AuthSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
 import { useNavigate } from 'react-router-dom';
+import { authFlowSession } from '../../utils/authFlowSession';
 
 export default function BeforeForm() {
   const dispatch = useAppDispatch();
@@ -86,6 +87,10 @@ export default function BeforeForm() {
             
             if (checkEmailExist.fulfilled.match(res)) {
               console.log('Email check result:', res.payload);
+              
+              // Set session data for auth flow
+              authFlowSession.setSession(values.email);
+              
               if (res.payload) {
                 // Email exists, navigate to login
                 toast.success('Redirecting to login... 🔑');

@@ -108,6 +108,19 @@ class ProfileApiService {
   }
 
   /**
+   * Submit completed profile to API for final processing
+   * This is called after all profile data is complete
+   * Endpoint: POST /api/profile/submit
+   */
+  async submitCompleteProfile(profileId: string): Promise<ProfileResponse> {
+    const response = await fetch(`${PROFILE_ENDPOINT}/${profileId}/submit`, this.getFetchOptions({
+      method: 'POST',
+      body: JSON.stringify({ action: 'submit_complete' }),
+    }));
+    return this.handleResponse<ProfileResponse>(response);
+  }
+
+  /**
    * Update profile
    */
   async updateProfile(

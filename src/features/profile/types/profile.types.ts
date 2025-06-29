@@ -47,6 +47,7 @@ export interface BaseProfile {
     timezone: string;
   };
   avatar?: string;
+  avatarUrl?: string; // Firebase storage URL for avatar image
   bio?: string;
   website?: string;
   socialLinks: {
@@ -439,4 +440,201 @@ export interface ProfileSearchParams extends ProfileSearchFilters {
   limit: number;
   sortBy: 'relevance' | 'updated_at' | 'created_at' | 'name';
   sortOrder: 'asc' | 'desc';
+}
+
+/**
+ * API-compatible profile output types
+ * These types match the expected JSON output format for the API
+ */
+
+/**
+ * Job Seeker API output format
+ */
+export interface JobSeekerApiOutput {
+  userId: number;
+  profileType: "JOB_SEEKER";
+  fullName: string;
+  phone: string | null;
+  address: string | null;
+  summary: string | null;
+  skills: string[] | null;
+  experiences: string[] | null;
+  companyName: null;
+  companyWebsite: null;
+}
+
+/**
+ * Employer API output format
+ */
+export interface EmployerApiOutput {
+  userId: number;
+  profileType: "EMPLOYER";
+  fullName: string;
+  phone: string | null;
+  address: string | null;
+  summary: string | null;
+  skills: null;
+  experiences: null;
+  companyName: string | null;
+  companyWebsite: string | null;
+}
+
+/**
+ * Union type for API output
+ */
+export type ProfileApiOutput = JobSeekerApiOutput | EmployerApiOutput;
+
+/**
+ * Profile transformation utilities
+ */
+export class ProfileTransformer {
+  /**
+   * Transform JobSeekerProfile to API output format
+   */
+  static toJobSeekerApiOutput(profile: JobSeekerProfile): JobSeekerApiOutput {
+    const fullAddress = profile.location ? 
+      `${profile.location.city}, ${profile.location.state}` : null;
+    
+    // Transform experience array to simple strings
+    const experienceStrings = profile.jobSeekerData.experience?.map(exp => 
+      `${exp.position} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})`
+    ) || null;
+
+    return {
+      userId: parseInt(profile.userId),
+      profileType: "JOB_SEEKER",
+      fullName: `${profile.firstName} ${profile.lastName}`,
+      phone: profile.phone || null,
+      address: fullAddress,
+      summary: profile.jobSeekerData.summary || null,
+      skills: profile.jobSeekerData.skills?.length > 0 ? profile.jobSeekerData.skills : null,
+      experiences: experienceStrings?.length > 0 ? experienceStrings : null,
+      companyName: null,
+      companyWebsite: null
+    };
+  }
+
+  /**
+   * Transform EmployerProfile to API output format
+   */
+  static toEmployerApiOutput(profile: EmployerProfile): EmployerApiOutput {
+    const fullAddress = profile.location ? 
+      `${profile.location.city}, ${profile.location.state}` : null;
+
+    return {
+      userId: parseInt(profile.userId),
+      profileType: "EMPLOYER",
+      fullName: `${profile.firstName} ${profile.lastName}`,
+      phone: profile.phone || null,
+      address: fullAddress,
+      summary: profile.employerData.companyDescription || null,
+      skills: null,
+      experiences: null,
+      companyName: profile.employerData.companyName || null,
+      companyWebsite: profile.employerData.companyWebsite || null
+    };
+  }
+
+  /**
+   * Transform any Profile to API output format
+   */
+  static toApiOutput(profile: Profile): ProfileApiOutput {
+    if (profile.role === 'job_seeker') {
+      return this.toJobSeekerApiOutput(profile as JobSeekerProfile);
+    } else {
+      return this.toEmployerApiOutput(profile as EmployerProfile);
+    }
+  }
+
+  /**
+   * Transform from API input to internal profile format (for creating profiles)
+   */
+  static fromJobSeekerApiInput(apiData: Partial<JobSeekerApiOutput>): Partial<JobSeekerProfile> {
+    const [firstName, ...lastNameParts] = (apiData.fullName || '').split(' ');
+    const lastName = lastNameParts.join(' ');
+    
+    // Parse address
+    const addressParts = apiData.address?.split(', ') || [];
+    const city = addressParts[0] || '';
+    const state = addressParts[1] || '';
+
+    return {
+      firstName: firstName || '',
+      lastName: lastName || '',
+      phone: apiData.phone || undefined,
+      location: {
+        city,
+        state,
+        country: 'US', // Default country
+        timezone: 'UTC' // Default timezone
+      },
+      role: 'job_seeker',
+      jobSeekerData: {
+        summary: apiData.summary || '',
+        skills: apiData.skills || [],
+        // Note: experiences would need more complex parsing in real implementation
+        experience: [], // Would need to parse experience strings
+        title: '', // Would need to be provided separately
+        experienceLevel: 'mid', // Default value
+        yearsOfExperience: 0, // Default value
+        preferredRoles: [],
+        salaryExpectation: {
+          min: 0,
+          max: 0,
+          currency: 'USD'
+        },
+        employmentTypes: [],
+        workLocationPreference: [],
+        availabilityDate: new Date().toISOString(),
+        isOpenToWork: true,
+        education: [],
+        projects: [],
+        certifications: [],
+        languages: []
+      }
+    };
+  }
+
+  /**
+   * Transform from API input to internal employer profile format
+   */
+  static fromEmployerApiInput(apiData: Partial<EmployerApiOutput>): Partial<EmployerProfile> {
+    const [firstName, ...lastNameParts] = (apiData.fullName || '').split(' ');
+    const lastName = lastNameParts.join(' ');
+    
+    // Parse address
+    const addressParts = apiData.address?.split(', ') || [];
+    const city = addressParts[0] || '';
+    const state = addressParts[1] || '';
+
+    return {
+      firstName: firstName || '',
+      lastName: lastName || '',
+      phone: apiData.phone || undefined,
+      location: {
+        city,
+        state,
+        country: 'US', // Default country
+        timezone: 'UTC' // Default timezone
+      },
+      role: 'employer',
+      employerData: {
+        companyName: apiData.companyName || '',
+        companyDescription: apiData.summary || '',
+        companyWebsite: apiData.companyWebsite || undefined,
+        companySize: '', // Would need to be provided separately
+        industry: '', // Would need to be provided separately
+        headquarters: {
+          city,
+          state,
+          country: 'US'
+        },
+        benefits: [],
+        culture: [],
+        techStack: [],
+        isVerified: false,
+        verificationBadges: []
+      }
+    };
+  }
 }

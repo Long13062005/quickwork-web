@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../hooks';
-import { createProfile } from '../features/profile/ProfileSlice';
+import { createLocalProfile } from '../features/profile/ProfileSlice';
 import { ThemeToggle } from '../components/ThemeToggle';
 import QuickworkLogo from '../assets/Quickwork_logo.png';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ export default function ChooseRole(): React.JSX.Element {
     setIsSelecting(true);
     
     try {
-      // Create a basic profile with the selected role
+      // Create a basic profile with the selected role (LOCAL STATE ONLY - NO API CALL)
       const profileData = {
         firstName: user?.fullName?.split(' ')[0] || '',
         lastName: user?.fullName?.split(' ').slice(1).join(' ') || '',
@@ -55,14 +55,15 @@ export default function ChooseRole(): React.JSX.Element {
 
       const actualRole = roleMap[role] || role as UserRole;
       
-      const result = await dispatch(createProfile({ 
+      // Store the role and basic data in Redux state (NO API CALL YET)
+      const result = await dispatch(createLocalProfile({ 
         role: actualRole, 
         profileData: profileData as any 
       }));
 
-      if (createProfile.fulfilled.match(result)) {
-        toast.success(`Welcome! Your ${actualRole === 'job_seeker' ? 'Job Seeker' : 'Employer'} profile has been created.`);
-        // Navigate to the appropriate profile page
+      if (createLocalProfile.fulfilled.match(result)) {
+        toast.success(`Role selected! Complete your ${actualRole === 'job_seeker' ? 'Job Seeker' : 'Employer'} profile to continue.`);
+        // Navigate to the appropriate profile page to fill out details
         navigate(`/profile/${role}`, { replace: true });
       } else {
         throw new Error(result.payload as string || 'Failed to create profile');

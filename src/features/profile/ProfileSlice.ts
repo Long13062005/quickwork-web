@@ -19,6 +19,7 @@ import type {
   Project,
   Certification,
   ProfileStatus,
+  ExperienceLevel,
 } from './types/profile.types';
 import { profileApiService } from './api/profileApi';
 
@@ -70,7 +71,102 @@ export const fetchProfileById = createAsyncThunk(
   }
 );
 
-// Create new profile
+// Create new profile (LOCAL STATE ONLY - NO API CALL)
+export const createLocalProfile = createAsyncThunk(
+  'profile/createLocal',
+  async (
+    { role, profileData }: {
+      role: UserRole;
+      profileData: JobSeekerProfileFormData | EmployerProfileFormData;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Create profile object locally without API call
+      const baseProfile = {
+        id: `temp_${Date.now()}`, // Temporary ID until API submission
+        userId: `user_${Date.now()}`,
+        role,
+        status: 'draft' as ProfileStatus,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        email: profileData.email,
+        phone: profileData.phone || '',
+        location: profileData.location,
+        avatar: '',
+        avatarUrl: '', // Firebase storage URL for avatar
+        bio: profileData.bio || '',
+        website: profileData.website || '',
+        socialLinks: profileData.socialLinks || {
+          linkedin: '',
+          github: '',
+          twitter: '',
+          portfolio: ''
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString()
+      };
+
+      if (role === 'job_seeker') {
+        return {
+          ...baseProfile,
+          role: 'job_seeker' as const,
+          jobSeekerData: {
+            title: '',
+            summary: '',
+            skills: [],
+            experienceLevel: 'mid' as ExperienceLevel,
+            yearsOfExperience: 0,
+            preferredRoles: [],
+            salaryExpectation: {
+              min: 0,
+              max: 0,
+              currency: 'USD'
+            },
+            employmentTypes: [],
+            workLocationPreference: [],
+            availabilityDate: new Date().toISOString(),
+            isOpenToWork: true,
+            education: [],
+            experience: [],
+            projects: [],
+            certifications: [],
+            languages: []
+          }
+        };
+      } else {
+        return {
+          ...baseProfile,
+          role: 'employer' as const,
+          employerData: {
+            companyName: '',
+            companySize: '',
+            industry: '',
+            companyDescription: '',
+            companyLogo: '',
+            companyWebsite: '',
+            foundedYear: new Date().getFullYear(),
+            headquarters: {
+              city: '',
+              state: '',
+              country: ''
+            },
+            benefits: [],
+            culture: [],
+            techStack: [],
+            isVerified: false,
+            verificationBadges: []
+          }
+        };
+      }
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to create local profile');
+    }
+  }
+);
+
+// Create new profile (API CALL - Only for final submission)
 export const createProfile = createAsyncThunk(
   'profile/create',
   async (
@@ -101,6 +197,21 @@ export const updateProfile = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update profile');
+    }
+  }
+);
+
+// Submit completed profile for final API processing
+export const submitCompleteProfile = createAsyncThunk(
+  'profile/submitComplete',
+  async (profileId: string, { rejectWithValue, dispatch }) => {
+    try {
+      const response = await profileApiService.submitCompleteProfile(profileId);
+      return response.data;
+    } catch (error: any) {
+      // If submission fails, delete the profile state
+      dispatch(deleteProfile(profileId));
+      return rejectWithValue(error.message || 'Failed to submit profile');
     }
   }
 );
@@ -372,7 +483,25 @@ const profileSlice = createSlice({
         state.error = action.payload as string;
       });
 
-    // Create profile
+    // Create local profile (no API call)
+    builder
+      .addCase(createLocalProfile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+        state.validationErrors = null;
+      })
+      .addCase(createLocalProfile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.currentProfile = action.payload;
+        state.isDirty = false;
+        state.lastFetchedAt = new Date().toISOString();
+      })
+      .addCase(createLocalProfile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Create profile (API call)
     builder
       .addCase(createProfile.pending, (state) => {
         state.isLoading = true;
@@ -405,6 +534,23 @@ const profileSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.isUpdating = false;
         state.error = action.payload as string;
+      });
+
+    // Submit complete profile
+    builder
+      .addCase(submitCompleteProfile.pending, (state) => {
+        state.isUpdating = true;
+        state.error = null;
+      })
+      .addCase(submitCompleteProfile.fulfilled, (state, action) => {
+        state.isUpdating = false;
+        state.currentProfile = action.payload;
+        state.isDirty = false;
+      })
+      .addCase(submitCompleteProfile.rejected, (state, action) => {
+        state.isUpdating = false;
+        state.error = action.payload as string;
+        // Profile will be deleted by the deleteProfile action called in the thunk
       });
 
     // Delete profile

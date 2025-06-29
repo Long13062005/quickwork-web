@@ -10,10 +10,12 @@ const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const BeforeAuth = lazy(() => import('./pages/BeforeAuth'))
 const ChooseRole = lazy(() => import('./pages/ChooseRole'))
+const ProfileSuccess = lazy(() => import('./pages/ProfileSuccess'))
 
 // Lazy load profile components
 const JobSeekerProfile = lazy(() => import('./features/profile/components/JobSeekerProfile'))
 const EmployerProfile = lazy(() => import('./features/profile/components/EmployerProfile'))
+const ProfileApiDemo = lazy(() => import('./features/profile/components/ProfileApiDemo'))
 
 
 function App() {
@@ -53,6 +55,16 @@ function App() {
               <EmployerProfile />
             </ProtectedRoute>
           } />
+          
+          {/* Profile success route */}
+          <Route path="/profile/success" element={
+            <ProtectedRoute requireAuth={true} requireProfile={false}>
+              <ProfileSuccess />
+            </ProtectedRoute>
+          } />
+          
+          {/* Profile API demo route */}
+          <Route path="/profile/demo" element={<ProfileApiDemo />} />
           
           {/* Catch-all route for 404 - redirect to auth for now */}
           <Route path="*" element={<Navigate to="/auth" replace />} />

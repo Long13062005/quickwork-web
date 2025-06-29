@@ -3,9 +3,12 @@
  * Header bar with profile info, save status, and navigation controls
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAppDispatch } from '../../../hooks';
+import { resetProfileState } from '../ProfileSlice';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import type { Profile } from '../types/profile.types';
 
 /**
@@ -29,6 +32,26 @@ export function ProfileHeader({
   lastSaved,
   onToggleSidebar,
 }: ProfileHeaderProps): React.JSX.Element {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Handle role change with confirmation
+  const handleChangeRole = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const confirmRoleChange = () => {
+    // Clear the current profile state
+    dispatch(resetProfileState());
+    // Navigate back to role selection
+    navigate('/auth/choose-role', { replace: true });
+    setShowConfirmDialog(false);
+  };
+
+  const cancelRoleChange = () => {
+    setShowConfirmDialog(false);
+  };
   
   /**
    * Get profile completion percentage (mock calculation)
@@ -186,6 +209,22 @@ export function ProfileHeader({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <ThemeToggle variant="profile" className="hidden sm:flex" />
+            <ThemeToggle variant="compact" className="sm:hidden" />
+
+            {/* Change Role Button */}
+            <button
+              onClick={handleChangeRole}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+              title="Change your role selection"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="hidden sm:inline">Change Role</span>
+            </button>
+
             {/* Preview Button */}
             <Link
               to={`/profile/${profile?.id}`}
@@ -211,6 +250,65 @@ export function ProfileHeader({
           </div>
         </div>
       </div>
+
+      {/* Role Change Confirmation Dialog */}
+      {showConfirmDialog && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={cancelRoleChange}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 m-4 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Change Your Role?
+              </h3>
+              
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Are you sure you want to change your role? All your current profile progress will be lost and you'll need to start over.
+              </p>
+              
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={cancelRoleChange}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 
+                           hover:text-gray-900 dark:hover:text-gray-100 
+                           border border-gray-300 dark:border-gray-600 rounded-lg
+                           hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  onClick={confirmRoleChange}
+                  className="px-4 py-2 text-sm font-medium text-white
+                           bg-red-600 hover:bg-red-700 
+                           border border-red-600 rounded-lg
+                           hover:shadow-md transition-all duration-200
+                           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                  Yes, Change Role
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </header>
   );
 }

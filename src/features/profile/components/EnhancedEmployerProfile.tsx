@@ -9,9 +9,7 @@ import { EnhancedProfileHeader } from './EnhancedProfileHeader';
 import { RoleBasedProfileForm } from './RoleBasedProfileForm';
 import { useProfile } from '../hooks/useProfile';
 import { useProfileUpdate } from '../hooks/useProfileUpdate';
-import { useProfileSubmission } from '../hooks/useProfileSubmission';
 import { calculateProfileCompletion, getMissingProfileFields } from '../utils/profileCompletion';
-import { useProfileApiTransform } from '../utils/profileApiUtils';
 import type { EmployerProfile as EmployerProfileType } from '../types/profile.types';
 
 /**
@@ -302,14 +300,12 @@ const ProfileCompletionChecklist: React.FC<ProfileCompletionChecklistProps> = ({
 /**
  * Main EmployerProfile component
  */
-const EmployerProfile: React.FC = () => {
+const EnhancedEmployerProfile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeSection, setActiveSection] = useState<'overview' | 'edit'>('overview');
   
   const { profile, isLoading, error } = useProfile();
   const { saveProfile, isSaving } = useProfileUpdate();
-  const { transformToApi } = useProfileApiTransform();
-  const { isSubmitting, submitProfile, canSubmit } = useProfileSubmission();
 
   // Type guard to ensure we have an employer profile
   const employerProfile = profile?.role === 'employer' ? profile as EmployerProfileType : null;
@@ -321,34 +317,6 @@ const EmployerProfile: React.FC = () => {
     setIsEditing(!isEditing);
     setActiveSection(isEditing ? 'overview' : 'edit');
   }, [isEditing]);
-
-  const handleSubmitProfile = useCallback(async () => {
-    if (!employerProfile) return;
-    await submitProfile(employerProfile);
-  }, [employerProfile, submitProfile]);
-
-  const handleExportProfile = useCallback(() => {
-    if (!employerProfile) return;
-    
-    try {
-      const apiData = transformToApi(employerProfile);
-      const jsonString = JSON.stringify(apiData, null, 2);
-      
-      // Create download link
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${employerProfile.firstName}_${employerProfile.lastName}_employer_profile.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting profile:', error);
-      alert('Failed to export profile. Please try again.');
-    }
-  }, [employerProfile, transformToApi]);
 
   const handleSaveProfile = useCallback(async () => {
     if (!employerProfile) return;
@@ -418,10 +386,6 @@ const EmployerProfile: React.FC = () => {
           completionPercentage={completionPercentage}
           isEditing={isEditing}
           onEditToggle={handleEditToggle}
-          onExportProfile={handleExportProfile}
-          onSubmitProfile={handleSubmitProfile}
-          canSubmit={employerProfile ? canSubmit(employerProfile) : false}
-          isSubmitting={isSubmitting}
         />
 
         {/* Main Content */}
@@ -490,4 +454,4 @@ const EmployerProfile: React.FC = () => {
   );
 };
 
-export default EmployerProfile;
+export default EnhancedEmployerProfile;

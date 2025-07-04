@@ -5,8 +5,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch } from '../hooks';
-import { createLocalProfile } from '../features/profile/ProfileSlice';
+import { useAppSelector } from '../hooks';
+// TODO: Re-import when profile module is rebuilt
+// import { createLocalProfile } from '../features/profile/ProfileSlice';
 import { ThemeToggle } from '../components/ThemeToggle';
 import QuickworkLogo from '../assets/Quickwork_logo.png';
 import toast from 'react-hot-toast';
@@ -17,16 +18,36 @@ import type { UserRole } from '../features/profile/types/profile.types';
  */
 export default function ChooseRole(): React.JSX.Element {
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const { user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  // TODO: Re-add profile state when profile module is rebuilt
+  // const { currentProfile } = useAppSelector((state) => state.profile);
   const [isSelecting, setIsSelecting] = useState(false);
 
   // Redirect if not authenticated (shouldn't happen, but safety check)
   React.useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       navigate('/auth/login', { replace: true });
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, navigate]);
+
+  // TODO: Re-implement when profile module is rebuilt
+  // Redirect if user already has a role/profile (prevent role changing)
+  // React.useEffect(() => {
+  //   if (currentProfile && currentProfile.role) {
+  //     console.log('User already has a role:', currentProfile.role);
+  //     toast('You have already chosen your role and cannot change it.', {
+  //       icon: 'ℹ️',
+  //       duration: 4000,
+  //     });
+      
+  //     // Redirect to appropriate profile page or dashboard
+  //     const redirectRoute = currentProfile.role === 'job_seeker' 
+  //       ? '/profile/job-seeker' 
+  //       : '/profile/employer';
+      
+  //     navigate(redirectRoute, { replace: true });
+  //   }
+  // }, [currentProfile, navigate]);
 
   const handleRoleSelection = async (role: 'job-seeker' | 'employer') => {
     if (isSelecting) return; // Prevent double-clicks
@@ -34,40 +55,43 @@ export default function ChooseRole(): React.JSX.Element {
     setIsSelecting(true);
     
     try {
+      // TODO: Re-implement profile creation with selected role when profile module is rebuilt
       // Create a basic profile with the selected role (LOCAL STATE ONLY - NO API CALL)
-      const profileData = {
-        firstName: user?.fullName?.split(' ')[0] || '',
-        lastName: user?.fullName?.split(' ').slice(1).join(' ') || '',
-        email: user?.email || '',
-        bio: '',
-        location: {
-          city: '',
-          state: '',
-          country: '',
-          timezone: 'UTC'
-        }
-      };
+      // const profileData = {
+      //   firstName: user?.fullName?.split(' ')[0] || '',
+      //   lastName: user?.fullName?.split(' ').slice(1).join(' ') || '',
+      //   email: user?.email || '',
+      //   title: '', // Professional title - to be filled in profile form
+      //   bio: '',
+      //   location: {
+      //     city: '',
+      //     state: '',
+      //     country: '',
+      //     timezone: 'UTC'
+      //   }
+      // };
 
       const roleMap: Record<string, UserRole> = {
-        'job-seeker': 'job_seeker',
+        'job-seeker': 'jobseeker',
         'employer': 'employer'
       };
 
       const actualRole = roleMap[role] || role as UserRole;
       
+      // TODO: Re-implement profile creation when profile module is rebuilt
       // Store the role and basic data in Redux state (NO API CALL YET)
-      const result = await dispatch(createLocalProfile({ 
-        role: actualRole, 
-        profileData: profileData as any 
-      }));
+      // const result = await dispatch(createLocalProfile({ 
+      //   role: actualRole, 
+      //   profileData: profileData as any 
+      // }));
 
-      if (createLocalProfile.fulfilled.match(result)) {
-        toast.success(`Role selected! Complete your ${actualRole === 'job_seeker' ? 'Job Seeker' : 'Employer'} profile to continue.`);
+      // if (createLocalProfile.fulfilled.match(result)) {
+        toast.success(`Role selected! Complete your ${actualRole === 'jobseeker' ? 'Job Seeker' : 'Employer'} profile to continue.`);
         // Navigate to the appropriate profile page to fill out details
         navigate(`/profile/${role}`, { replace: true });
-      } else {
-        throw new Error(result.payload as string || 'Failed to create profile');
-      }
+      // } else {
+      //   throw new Error(result.payload as string || 'Failed to create profile');
+      // }
     } catch (error: any) {
       console.error('Profile creation failed:', error);
       toast.error('Failed to create profile. Please try again.');
@@ -115,7 +139,7 @@ export default function ChooseRole(): React.JSX.Element {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="text-lg text-zinc-600 dark:text-zinc-300 mb-2"
           >
-            {user?.email && `Hi ${user.email}!`}
+            Welcome!
           </motion.p>
           
           <motion.p
@@ -210,7 +234,7 @@ export default function ChooseRole(): React.JSX.Element {
             </p>
           ) : (
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Don't worry, you can always change your role later in your profile settings.
+              Choose carefully - your role cannot be changed once your profile is saved.
             </p>
           )}
         </motion.div>

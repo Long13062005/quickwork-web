@@ -4,8 +4,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useAppDispatch } from '../hooks';
-import { updateCurrentProfileLocal } from '../features/profile/ProfileSlice';
+// TODO: Re-import when profile module is rebuilt
+// import { useAppDispatch } from '../hooks';
+// import { updateCurrentProfileLocal } from '../features/profile/ProfileSlice';
 import FirebaseStorageService, { type UploadProgress, type UploadResult } from '../services/firebaseStorage';
 import toast from 'react-hot-toast';
 
@@ -30,7 +31,8 @@ export const useAvatarUpload = ({
   onError,
   withProgress = true
 }: UseAvatarUploadOptions): UseAvatarUploadReturn => {
-  const dispatch = useAppDispatch();
+  // TODO: Re-add when profile module is rebuilt
+  // const dispatch = useAppDispatch();
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -72,10 +74,11 @@ export const useAvatarUpload = ({
       }
 
       // Update profile in local state
-      dispatch(updateCurrentProfileLocal({
-        avatarUrl: result.url,
-        avatar: result.path // Keep path for deletion
-      }));
+      // TODO: Re-implement when profile module is rebuilt
+      // dispatch(updateCurrentProfileLocal({
+      //   avatarUrl: result.url,
+      //   avatar: result.path // Keep path for deletion
+      // }));
 
       // Success callback
       onSuccess?.(result);
@@ -90,7 +93,7 @@ export const useAvatarUpload = ({
       setIsUploading(false);
       setProgress(0);
     }
-  }, [userId, dispatch, onSuccess, onError, withProgress]);
+  }, [userId, onSuccess, onError, withProgress]);
 
   /**
    * Delete avatar image
@@ -102,10 +105,11 @@ export const useAvatarUpload = ({
       await FirebaseStorageService.deleteAvatar(storagePath);
 
       // Update profile in local state
-      dispatch(updateCurrentProfileLocal({
-        avatarUrl: undefined,
-        avatar: undefined
-      }));
+      // TODO: Re-implement when profile module is rebuilt
+      // dispatch(updateCurrentProfileLocal({
+      //   avatarUrl: undefined,
+      //   avatar: undefined
+      // }));
 
       toast.success('Avatar deleted successfully!', { id: toastId });
 
@@ -115,7 +119,7 @@ export const useAvatarUpload = ({
       onError?.(errorMessage);
       toast.error(errorMessage);
     }
-  }, [dispatch, onError]);
+  }, [onError]);
 
   /**
    * Validate file before upload

@@ -1,663 +1,321 @@
-/**
- * Profile Redux slice
- * Manages profile state with Redux Toolkit
- */
-
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import type {
-  Profile,
-  ProfileState,
-  ProfileUpdatePayload,
-  ProfileSearchParams,
-  JobSeekerProfileFormData,
-  EmployerProfileFormData,
-  UserRole,
-  ProfileValidationErrors,
-  WorkExperience,
-  Education,
-  Project,
-  Certification,
-  ProfileStatus,
-  ExperienceLevel,
+import { profileApi } from './api/profileApi';
+import type { 
+  Profile, 
+  LegacyCreateProfileRequest, 
+  LegacyUpdateProfileRequest,
+  ProfileData
 } from './types/profile.types';
-import { profileApiService } from './api/profileApi';
 
-/**
- * Initial state
- */
-const initialState: ProfileState = {
-  currentProfile: null,
-  isLoading: false,
-  isUpdating: false,
-  isDeleting: false,
-  error: null,
-  validationErrors: null,
-  isDirty: false,
-  isValid: true,
-  lastFetchedAt: null,
-  profiles: [],
-  profilesLoading: false,
-  profilesError: null,
+// Helper function to convert ProfileData to legacy Profile format
+const convertBackendToLegacyProfile = (backendProfile: ProfileData): Profile => {
+  console.log('ProfileSlice: Converting backend profile to legacy format:', backendProfile);
+  
+  // Validate required fields
+  if (!backendProfile) {
+    throw new Error('ProfileSlice: Backend profile is null or undefined');
+  }
+  
+  if (!backendProfile.fullName) {
+    throw new Error('ProfileSlice: Backend profile missing required fullName field');
+  }
+  
+  // Log warning if userId is missing but don't throw error
+  if (backendProfile.userId === undefined || backendProfile.userId === null) {
+    console.warn('ProfileSlice: Backend profile missing userId field, using fallback value');
+  }
+  
+  const fullNameParts = backendProfile.fullName.split(' ');
+  const firstName = fullNameParts[0] || '';
+  const lastName = fullNameParts.slice(1).join(' ') || '';
+  
+  const baseProfile = {
+    id: backendProfile.id?.toString() || '',
+    userId: backendProfile.userId?.toString() || '0', // Fallback to '0' if userId is missing
+    email: '', // Email not available in current ProfileData structure
+    firstName,
+    lastName,
+    profilePicture: backendProfile.avatarUrl || undefined,
+    createdAt: backendProfile.createdAt || new Date().toISOString(),
+    updatedAt: backendProfile.updatedAt || new Date().toISOString(),
+    isComplete: Boolean(backendProfile.fullName && backendProfile.title),
+  };
+
+  console.log('ProfileSlice: Base profile created:', baseProfile);
+
+  if (backendProfile.profileType === 'JOB_SEEKER') {
+    return {
+      ...baseProfile,
+      role: 'jobseeker' as const,
+      phone: backendProfile.phone || undefined,
+      location: backendProfile.address || undefined,
+      professionalTitle: backendProfile.title || undefined,
+      experience: backendProfile.experiences?.join(', ') || undefined,
+      skills: backendProfile.skills || undefined,
+      bio: backendProfile.summary || undefined,
+    };
+  } else if (backendProfile.profileType === 'EMPLOYER') {
+    return {
+      ...baseProfile,
+      role: 'employer' as const,
+      companyName: backendProfile.companyName || '',
+      phone: backendProfile.phone || undefined,
+      companyLocation: backendProfile.address || undefined,
+      industry: backendProfile.title || undefined, // Using title as industry for employers
+      companyDescription: backendProfile.summary || undefined,
+      companyWebsite: backendProfile.companyWebsite || undefined,
+    };
+  } else if (backendProfile.profileType === 'ADMIN') {
+    return {
+      ...baseProfile,
+      role: 'admin' as const,
+      phone: backendProfile.phone || undefined,
+      location: backendProfile.address || undefined,
+      title: backendProfile.title || undefined,
+      bio: backendProfile.summary || undefined,
+    };
+  } else {
+    // Fallback case if type isn't recognized
+    console.warn('ProfileSlice: Unrecognized profile type:', backendProfile.profileType);
+    return {
+      ...baseProfile,
+      role: 'jobseeker' as const, // Default to jobseeker as fallback
+    };
+  }
 };
 
-/**
- * Async thunks for profile operations
- */
+// Profile state interface
+interface ProfileState {
+  currentProfile: Profile | null;
+  profiles: Profile[];
+  loading: boolean;
+  error: string | null;
+  isCreating: boolean;
+  isUpdating: boolean;
+}
 
-// Get current user's profile
-export const fetchCurrentProfile = createAsyncThunk(
-  'profile/fetchCurrent',
+// Initial state
+const initialState: ProfileState = {
+  currentProfile: null,
+  profiles: [],
+  loading: false,
+  error: null,
+  isCreating: false,
+  isUpdating: false,
+};
+
+// Async thunks
+export const fetchProfile = createAsyncThunk(
+  'profile/fetchProfile',
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const response = await profileApi.getProfile(userId);
+      if (response) {
+        return convertBackendToLegacyProfile(response);
+      }
+      return null;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch profile');
+    }
+  }
+);
+
+export const fetchMyProfile = createAsyncThunk(
+  'profile/fetchMyProfile',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await profileApiService.getCurrentProfile();
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch profile');
-    }
-  }
-);
-
-// Get profile by ID
-export const fetchProfileById = createAsyncThunk(
-  'profile/fetchById',
-  async (profileId: string, { rejectWithValue }) => {
-    try {
-      const response = await profileApiService.getProfileById(profileId);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch profile');
-    }
-  }
-);
-
-// Create new profile (LOCAL STATE ONLY - NO API CALL)
-export const createLocalProfile = createAsyncThunk(
-  'profile/createLocal',
-  async (
-    { role, profileData }: {
-      role: UserRole;
-      profileData: JobSeekerProfileFormData | EmployerProfileFormData;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      // Create profile object locally without API call
-      const baseProfile = {
-        id: `temp_${Date.now()}`, // Temporary ID until API submission
-        userId: `user_${Date.now()}`,
-        role,
-        status: 'draft' as ProfileStatus,
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        email: profileData.email,
-        phone: profileData.phone || '',
-        location: profileData.location,
-        avatar: '',
-        avatarUrl: '', // Firebase storage URL for avatar
-        bio: profileData.bio || '',
-        website: profileData.website || '',
-        socialLinks: profileData.socialLinks || {
-          linkedin: '',
-          github: '',
-          twitter: '',
-          portfolio: ''
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastActiveAt: new Date().toISOString()
-      };
-
-      if (role === 'job_seeker') {
-        return {
-          ...baseProfile,
-          role: 'job_seeker' as const,
-          jobSeekerData: {
-            title: '',
-            summary: '',
-            skills: [],
-            experienceLevel: 'mid' as ExperienceLevel,
-            yearsOfExperience: 0,
-            preferredRoles: [],
-            salaryExpectation: {
-              min: 0,
-              max: 0,
-              currency: 'USD'
-            },
-            employmentTypes: [],
-            workLocationPreference: [],
-            availabilityDate: new Date().toISOString(),
-            isOpenToWork: true,
-            education: [],
-            experience: [],
-            projects: [],
-            certifications: [],
-            languages: []
-          }
-        };
-      } else {
-        return {
-          ...baseProfile,
-          role: 'employer' as const,
-          employerData: {
-            companyName: '',
-            companySize: '',
-            industry: '',
-            companyDescription: '',
-            companyLogo: '',
-            companyWebsite: '',
-            foundedYear: new Date().getFullYear(),
-            headquarters: {
-              city: '',
-              state: '',
-              country: ''
-            },
-            benefits: [],
-            culture: [],
-            techStack: [],
-            isVerified: false,
-            verificationBadges: []
-          }
-        };
+      const response = await profileApi.getMyProfile();
+      if (response) {
+        return convertBackendToLegacyProfile(response);
       }
+      return null;
     } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create local profile');
+      return rejectWithValue(error.message || 'Failed to fetch profile');
     }
   }
 );
 
-// Create new profile (API CALL - Only for final submission)
 export const createProfile = createAsyncThunk(
-  'profile/create',
-  async (
-    { role, profileData }: {
-      role: UserRole;
-      profileData: JobSeekerProfileFormData | EmployerProfileFormData;
-    },
-    { rejectWithValue }
-  ) => {
+  'profile/createProfile',
+  async (request: LegacyCreateProfileRequest, { rejectWithValue }) => {
     try {
-      const response = await profileApiService.createProfile(role, profileData);
-      return response.data;
+      console.log('ProfileSlice: Creating profile with request:', request);
+      const response = await profileApi.createLegacyProfile(request);
+      console.log('ProfileSlice: Create profile response:', response);
+      
+      if (response.success && response.profile) {
+        console.log('ProfileSlice: Profile created successfully, converting to legacy format...');
+        const convertedProfile = convertBackendToLegacyProfile(response.profile);
+        console.log('ProfileSlice: Converted profile:', convertedProfile);
+        return convertedProfile;
+      }
+      
+      console.error('ProfileSlice: Create profile failed:', response);
+      throw new Error(response.message || 'Failed to create profile');
     } catch (error: any) {
+      console.error('ProfileSlice: Create profile error:', error);
       return rejectWithValue(error.message || 'Failed to create profile');
     }
   }
 );
 
-// Update profile
 export const updateProfile = createAsyncThunk(
-  'profile/update',
-  async (
-    { profileId, updates }: { profileId: string; updates: ProfileUpdatePayload },
-    { rejectWithValue }
-  ) => {
+  'profile/updateProfile',
+  async (request: LegacyUpdateProfileRequest, { rejectWithValue }) => {
     try {
-      const response = await profileApiService.updateProfile(profileId, updates);
-      return response.data;
+      const response = await profileApi.updateLegacyProfile(request);
+      if (response.success && response.profile) {
+        return convertBackendToLegacyProfile(response.profile);
+      }
+      throw new Error(response.message || 'Failed to update profile');
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to update profile');
     }
   }
 );
 
-// Submit completed profile for final API processing
-export const submitCompleteProfile = createAsyncThunk(
-  'profile/submitComplete',
-  async (profileId: string, { rejectWithValue, dispatch }) => {
+export const fetchProfiles = createAsyncThunk(
+  'profile/fetchProfiles',
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await profileApiService.submitCompleteProfile(profileId);
-      return response.data;
+      const response = await profileApi.getProfiles();
+      return response.profiles.map(convertBackendToLegacyProfile);
     } catch (error: any) {
-      // If submission fails, delete the profile state
-      dispatch(deleteProfile(profileId));
-      return rejectWithValue(error.message || 'Failed to submit profile');
+      return rejectWithValue(error.message || 'Failed to fetch profiles');
     }
   }
 );
 
-// Delete profile
 export const deleteProfile = createAsyncThunk(
-  'profile/delete',
+  'profile/deleteProfile',
   async (profileId: string, { rejectWithValue }) => {
     try {
-      await profileApiService.deleteProfile(profileId);
-      return profileId;
+      const response = await profileApi.deleteProfile(profileId);
+      if (response.success) {
+        return profileId;
+      }
+      throw new Error(response.message || 'Failed to delete profile');
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to delete profile');
     }
   }
 );
 
-// Search profiles
-export const searchProfiles = createAsyncThunk(
-  'profile/search',
-  async (params: ProfileSearchParams, { rejectWithValue }) => {
-    try {
-      const response = await profileApiService.searchProfiles(params);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to search profiles');
-    }
-  }
-);
-
-// Upload avatar
-export const uploadAvatar = createAsyncThunk(
-  'profile/uploadAvatar',
-  async (
-    { profileId, file }: { profileId: string; file: File },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.uploadAvatar(profileId, file);
-      return { profileId, url: response.url };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to upload avatar');
-    }
-  }
-);
-
-// Upload resume
-export const uploadResume = createAsyncThunk(
-  'profile/uploadResume',
-  async (
-    { profileId, file }: { profileId: string; file: File },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.uploadResume(profileId, file);
-      return { profileId, url: response.url };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to upload resume');
-    }
-  }
-);
-
-// Work experience operations
-export const addWorkExperience = createAsyncThunk(
-  'profile/addWorkExperience',
-  async (
-    { profileId, experience }: {
-      profileId: string;
-      experience: Omit<WorkExperience, 'id'>;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.addWorkExperience(profileId, experience);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to add work experience');
-    }
-  }
-);
-
-export const updateWorkExperience = createAsyncThunk(
-  'profile/updateWorkExperience',
-  async (
-    { profileId, experienceId, updates }: {
-      profileId: string;
-      experienceId: string;
-      updates: Partial<WorkExperience>;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.updateWorkExperience(profileId, experienceId, updates);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to update work experience');
-    }
-  }
-);
-
-export const deleteWorkExperience = createAsyncThunk(
-  'profile/deleteWorkExperience',
-  async (
-    { profileId, experienceId }: { profileId: string; experienceId: string },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.deleteWorkExperience(profileId, experienceId);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to delete work experience');
-    }
-  }
-);
-
-// Education operations
-export const addEducation = createAsyncThunk(
-  'profile/addEducation',
-  async (
-    { profileId, education }: {
-      profileId: string;
-      education: Omit<Education, 'id'>;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.addEducation(profileId, education);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to add education');
-    }
-  }
-);
-
-// Project operations
-export const addProject = createAsyncThunk(
-  'profile/addProject',
-  async (
-    { profileId, project }: {
-      profileId: string;
-      project: Omit<Project, 'id'>;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.addProject(profileId, project);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to add project');
-    }
-  }
-);
-
-// Certification operations
-export const addCertification = createAsyncThunk(
-  'profile/addCertification',
-  async (
-    { profileId, certification }: {
-      profileId: string;
-      certification: Omit<Certification, 'id'>;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.addCertification(profileId, certification);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to add certification');
-    }
-  }
-);
-
-// Update profile status
-export const updateProfileStatus = createAsyncThunk(
-  'profile/updateStatus',
-  async (
-    { profileId, status }: { profileId: string; status: ProfileStatus },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await profileApiService.updateProfileStatus(profileId, status);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to update profile status');
-    }
-  }
-);
-
-/**
- * Profile slice
- */
+// Profile slice
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
   reducers: {
-    // Clear errors
     clearError: (state) => {
       state.error = null;
-      state.validationErrors = null;
     },
-
-    // Set validation errors
-    setValidationErrors: (state, action: PayloadAction<ProfileValidationErrors>) => {
-      state.validationErrors = action.payload;
-      state.isValid = Object.keys(action.payload).length === 0;
+    clearCurrentProfile: (state) => {
+      state.currentProfile = null;
     },
-
-    // Clear validation errors
-    clearValidationErrors: (state) => {
-      state.validationErrors = null;
-      state.isValid = true;
-    },
-
-    // Set form dirty state
-    setFormDirty: (state, action: PayloadAction<boolean>) => {
-      state.isDirty = action.payload;
-    },
-
-    // Reset profile state
-    resetProfileState: () => initialState,
-
-    // Update current profile locally (for optimistic updates)
-    updateCurrentProfileLocal: (state, action: PayloadAction<Partial<Profile>>) => {
-      if (state.currentProfile) {
-        Object.assign(state.currentProfile, action.payload);
-        state.isDirty = true;
-      }
-    },
-
-    // Clear profiles list
-    clearProfilesList: (state) => {
-      state.profiles = [];
-      state.profilesError = null;
+    setCurrentProfile: (state, action: PayloadAction<Profile>) => {
+      state.currentProfile = action.payload;
     },
   },
   extraReducers: (builder) => {
-    // Fetch current profile
     builder
-      .addCase(fetchCurrentProfile.pending, (state) => {
-        state.isLoading = true;
+      // Fetch Profile
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCurrentProfile.fulfilled, (state, action) => {
-        state.isLoading = false;
+      .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentProfile = action.payload;
-        state.lastFetchedAt = new Date().toISOString();
-        state.isDirty = false;
       })
-      .addCase(fetchCurrentProfile.rejected, (state, action) => {
-        state.isLoading = false;
+      .addCase(fetchProfile.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
-      });
-
-    // Fetch profile by ID
-    builder
-      .addCase(fetchProfileById.pending, (state) => {
-        state.isLoading = true;
+      })
+      
+      // Fetch My Profile
+      .addCase(fetchMyProfile.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(fetchProfileById.fulfilled, (state, action) => {
-        state.isLoading = false;
-        // If it's the current user's profile, update currentProfile
-        if (state.currentProfile?.id === action.payload.id) {
-          state.currentProfile = action.payload;
-        }
-      })
-      .addCase(fetchProfileById.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.payload as string;
-      });
-
-    // Create local profile (no API call)
-    builder
-      .addCase(createLocalProfile.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-        state.validationErrors = null;
-      })
-      .addCase(createLocalProfile.fulfilled, (state, action) => {
-        state.isLoading = false;
+      .addCase(fetchMyProfile.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentProfile = action.payload;
-        state.isDirty = false;
-        state.lastFetchedAt = new Date().toISOString();
       })
-      .addCase(createLocalProfile.rejected, (state, action) => {
-        state.isLoading = false;
+      .addCase(fetchMyProfile.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload as string;
-      });
-
-    // Create profile (API call)
-    builder
+      })
+      
+      // Create Profile
       .addCase(createProfile.pending, (state) => {
-        state.isLoading = true;
+        state.isCreating = true;
         state.error = null;
-        state.validationErrors = null;
       })
       .addCase(createProfile.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.currentProfile = action.payload;
-        state.isDirty = false;
-        state.lastFetchedAt = new Date().toISOString();
+        state.isCreating = false;
+        if (action.payload) {
+          state.currentProfile = action.payload;
+          state.profiles.push(action.payload);
+        }
       })
       .addCase(createProfile.rejected, (state, action) => {
-        state.isLoading = false;
+        state.isCreating = false;
         state.error = action.payload as string;
-      });
-
-    // Update profile
-    builder
+      })
+      
+      // Update Profile
       .addCase(updateProfile.pending, (state) => {
         state.isUpdating = true;
         state.error = null;
-        state.validationErrors = null;
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.isUpdating = false;
-        state.currentProfile = action.payload;
-        state.isDirty = false;
+        if (action.payload) {
+          state.currentProfile = action.payload;
+          const index = state.profiles.findIndex(p => p.id === action.payload!.id);
+          if (index !== -1) {
+            state.profiles[index] = action.payload;
+          }
+        }
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.isUpdating = false;
         state.error = action.payload as string;
-      });
-
-    // Submit complete profile
-    builder
-      .addCase(submitCompleteProfile.pending, (state) => {
-        state.isUpdating = true;
+      })
+      
+      // Fetch Profiles
+      .addCase(fetchProfiles.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
-      .addCase(submitCompleteProfile.fulfilled, (state, action) => {
-        state.isUpdating = false;
-        state.currentProfile = action.payload;
-        state.isDirty = false;
-      })
-      .addCase(submitCompleteProfile.rejected, (state, action) => {
-        state.isUpdating = false;
-        state.error = action.payload as string;
-        // Profile will be deleted by the deleteProfile action called in the thunk
-      });
-
-    // Delete profile
-    builder
-      .addCase(deleteProfile.pending, (state) => {
-        state.isDeleting = true;
-        state.error = null;
-      })
-      .addCase(deleteProfile.fulfilled, (state) => {
-        state.isDeleting = false;
-        state.currentProfile = null;
-        state.isDirty = false;
-      })
-      .addCase(deleteProfile.rejected, (state, action) => {
-        state.isDeleting = false;
-        state.error = action.payload as string;
-      });
-
-    // Search profiles
-    builder
-      .addCase(searchProfiles.pending, (state) => {
-        state.profilesLoading = true;
-        state.profilesError = null;
-      })
-      .addCase(searchProfiles.fulfilled, (state, action) => {
-        state.profilesLoading = false;
+      .addCase(fetchProfiles.fulfilled, (state, action) => {
+        state.loading = false;
         state.profiles = action.payload;
       })
-      .addCase(searchProfiles.rejected, (state, action) => {
-        state.profilesLoading = false;
-        state.profilesError = action.payload as string;
-      });
-
-    // Upload avatar
-    builder
-      .addCase(uploadAvatar.fulfilled, (state, action) => {
-        if (state.currentProfile && state.currentProfile.id === action.payload.profileId) {
-          state.currentProfile.avatar = action.payload.url;
+      .addCase(fetchProfiles.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      
+      // Delete Profile
+      .addCase(deleteProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profiles = state.profiles.filter(p => p.id !== action.payload);
+        if (state.currentProfile?.id === action.payload) {
+          state.currentProfile = null;
         }
-      });
-
-    // Upload resume
-    builder
-      .addCase(uploadResume.fulfilled, (state, action) => {
-        if (state.currentProfile && 
-            state.currentProfile.id === action.payload.profileId &&
-            state.currentProfile.role === 'job_seeker') {
-          if (!state.currentProfile.jobSeekerData.resume) {
-            state.currentProfile.jobSeekerData.resume = {
-              filename: '',
-              url: action.payload.url,
-              uploadedAt: new Date().toISOString(),
-            };
-          } else {
-            state.currentProfile.jobSeekerData.resume.url = action.payload.url;
-            state.currentProfile.jobSeekerData.resume.uploadedAt = new Date().toISOString();
-          }
-        }
-      });
-
-    // Add work experience, education, projects, certifications
-    builder
-      .addCase(addWorkExperience.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
       })
-      .addCase(updateWorkExperience.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
-      })
-      .addCase(deleteWorkExperience.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
-      })
-      .addCase(addEducation.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
-      })
-      .addCase(addProject.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
-      })
-      .addCase(addCertification.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
-      })
-      .addCase(updateProfileStatus.fulfilled, (state, action) => {
-        state.currentProfile = action.payload;
+      .addCase(deleteProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-// Export actions
-export const {
-  clearError,
-  setValidationErrors,
-  clearValidationErrors,
-  setFormDirty,
-  resetProfileState,
-  updateCurrentProfileLocal,
-  clearProfilesList,
-} = profileSlice.actions;
-
-// Export reducer
+export const { clearError, clearCurrentProfile, setCurrentProfile } = profileSlice.actions;
 export default profileSlice.reducer;
-
-// Selectors
-export const selectCurrentProfile = (state: { auth: any; profile: ProfileState }) => state.profile.currentProfile;
-export const selectProfileLoading = (state: { auth: any; profile: ProfileState }) => state.profile.isLoading;
-export const selectProfileUpdating = (state: { auth: any; profile: ProfileState }) => state.profile.isUpdating;
-export const selectProfileError = (state: { auth: any; profile: ProfileState }) => state.profile.error;
-export const selectProfileValidationErrors = (state: { auth: any; profile: ProfileState }) => state.profile.validationErrors;
-export const selectProfileIsDirty = (state: { auth: any; profile: ProfileState }) => state.profile.isDirty;
-export const selectProfileIsValid = (state: { auth: any; profile: ProfileState }) => state.profile.isValid;
-export const selectProfiles = (state: { auth: any; profile: ProfileState }) => state.profile.profiles;
-export const selectProfilesLoading = (state: { auth: any; profile: ProfileState }) => state.profile.profilesLoading;

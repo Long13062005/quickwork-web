@@ -6,10 +6,11 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAvatarUpload } from '../hooks/useAvatarUpload';
-import type { Profile } from '../features/profile/types/profile.types';
+// TODO: Re-import when profile module is rebuilt
+// import type { Profile } from '../features/profile/types/profile.types';
 
 interface AvatarUploadProps {
-  profile: Profile;
+  profile: any; // TODO: Replace with proper Profile type when profile module is rebuilt
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showProgressBar?: boolean;
   showDeleteButton?: boolean;

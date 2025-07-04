@@ -4,7 +4,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { login } from './AuthSlice';
-import { fetchCurrentProfile } from '../profile/ProfileSlice';
+// TODO: Re-import when profile module is rebuilt
+// import { fetchCurrentProfile } from '../profile/ProfileSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -92,37 +93,9 @@ export default function LoginForm() {
                 // Clear auth flow session after successful login
                 authFlowSession.clearSession();
                 
-                // Check if user has completed profile setup
-                try {
-                  const profileRes = await dispatch(fetchCurrentProfile());
-                  
-                  if (fetchCurrentProfile.fulfilled.match(profileRes)) {
-                    const profile = profileRes.payload;
-                    
-                    // Check if profile is incomplete (no role or basic info missing)
-                    const isProfileIncomplete = !profile?.role || 
-                                              !profile?.firstName || 
-                                              !profile?.lastName;
-                    
-                    if (isProfileIncomplete) {
-                      // Redirect to choose role page
-                      navigate('/auth/choose-role', { replace: true });
-                    } else {
-                      // Redirect to appropriate profile page
-                      const redirectPath = profile.role === 'job_seeker' 
-                        ? '/profile/job-seeker' 
-                        : '/profile/employer';
-                      navigate(redirectPath, { replace: true });
-                    }
-                  } else {
-                    // If profile fetch fails, assume new user and redirect to choose role
-                    navigate('/auth/choose-role', { replace: true });
-                  }
-                } catch (error) {
-                  console.error('Profile check failed:', error);
-                  // Default to choose role page if profile check fails
-                  navigate('/auth/choose-role', { replace: true });
-                }
+                console.log('LoginForm: Login successful, navigating to SmartRedirect...');
+                // Redirect to home page, SmartRedirect will handle profile checking
+                navigate('/', { replace: true });
               } else {
                 toast.error(res.payload || 'Login failed ❌');
               }

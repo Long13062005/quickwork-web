@@ -1,182 +1,139 @@
 /**
- * useProfile hook
- * Main hook for profile operations and state management
+ * useProfile Hook
+ * Main hook for profile data management
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '../../../hooks';
 import {
-  fetchCurrentProfile,
-  fetchProfileById,
+  fetchProfile,
+  fetchMyProfile,
   createProfile,
   updateProfile,
   deleteProfile,
-  uploadAvatar,
-  uploadResume,
+  fetchProfiles,
   clearError,
-  setFormDirty,
-  updateCurrentProfileLocal,
-  selectCurrentProfile,
-  selectProfileLoading,
-  selectProfileUpdating,
-  selectProfileError,
-  selectProfileIsDirty,
+  clearCurrentProfile,
+  setCurrentProfile,
 } from '../ProfileSlice';
-import type {
-  Profile,
-  UserRole,
-  JobSeekerProfileFormData,
-  EmployerProfileFormData,
-  ProfileUpdatePayload,
-} from '../types/profile.types';
+import type { Profile, LegacyCreateProfileRequest, LegacyUpdateProfileRequest } from '../types/profile.types';
 
-/**
- * Hook return type
- */
-interface UseProfileReturn {
-  // State
-  profile: Profile | null;
-  isLoading: boolean;
-  isUpdating: boolean;
-  error: string | null;
-  isDirty: boolean;
-
-  // Actions
-  fetchProfile: () => void;
-  fetchProfileById: (profileId: string) => void;
-  createNewProfile: (role: UserRole, data: JobSeekerProfileFormData | EmployerProfileFormData) => Promise<void>;
-  updateProfileData: (updates: ProfileUpdatePayload) => Promise<void>;
-  deleteCurrentProfile: () => Promise<void>;
-  uploadProfileAvatar: (file: File) => Promise<void>;
-  uploadProfileResume: (file: File) => Promise<void>;
-  updateLocalProfile: (updates: Partial<Profile>) => void;
-  markFormDirty: (dirty: boolean) => void;
-  clearProfileError: () => void;
-}
-
-/**
- * Main profile hook for managing profile state and operations
- * @returns Profile state and operations
- */
-export function useProfile(): UseProfileReturn {
+export const useProfile = () => {
   const dispatch = useAppDispatch();
-  
-  // Selectors
-  const profile = useAppSelector(selectCurrentProfile);
-  const isLoading = useAppSelector(selectProfileLoading);
-  const isUpdating = useAppSelector(selectProfileUpdating);
-  const error = useAppSelector(selectProfileError);
-  const isDirty = useAppSelector(selectProfileIsDirty);
+  const profileState = useAppSelector((state) => state.profile);
 
-  // Fetch current user's profile
-  const fetchProfile = useCallback(() => {
-    dispatch(fetchCurrentProfile());
+  // Fetch profile by userId
+  const fetchUserProfile = useCallback(async (userId: string) => {
+    try {
+      const result = await dispatch(fetchProfile(userId)).unwrap();
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+      throw error;
+    }
   }, [dispatch]);
 
-  // Fetch profile by ID
-  const fetchProfileByIdCallback = useCallback((profileId: string) => {
-    dispatch(fetchProfileById(profileId));
+  // Fetch current user's profile
+  const fetchCurrentProfile = useCallback(async () => {
+    try {
+      const result = await dispatch(fetchMyProfile()).unwrap();
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch current profile:', error);
+      throw error;
+    }
   }, [dispatch]);
 
   // Create new profile
-  const createNewProfile = useCallback(async (
-    role: UserRole,
-    data: JobSeekerProfileFormData | EmployerProfileFormData
-  ) => {
-    const result = await dispatch(createProfile({ role, profileData: data }));
-    if (createProfile.rejected.match(result)) {
-      throw new Error(result.payload as string);
+  const createNewProfile = useCallback(async (request: LegacyCreateProfileRequest) => {
+    try {
+      const result = await dispatch(createProfile(request)).unwrap();
+      return result;
+    } catch (error) {
+      console.error('Failed to create profile:', error);
+      throw error;
     }
   }, [dispatch]);
 
-  // Update profile
-  const updateProfileData = useCallback(async (updates: ProfileUpdatePayload) => {
-    if (!profile?.id) {
-      throw new Error('No profile ID available');
+  // Update existing profile
+  const updateCurrentProfile = useCallback(async (request: LegacyUpdateProfileRequest) => {
+    try {
+      const result = await dispatch(updateProfile(request)).unwrap();
+      return result;
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
     }
-    
-    const result = await dispatch(updateProfile({ profileId: profile.id, updates }));
-    if (updateProfile.rejected.match(result)) {
-      throw new Error(result.payload as string);
-    }
-  }, [dispatch, profile?.id]);
+  }, [dispatch]);
 
   // Delete profile
-  const deleteCurrentProfile = useCallback(async () => {
-    if (!profile?.id) {
-      throw new Error('No profile ID available');
+  const deleteCurrentProfile = useCallback(async (profileId: string) => {
+    try {
+      await dispatch(deleteProfile(profileId)).unwrap();
+    } catch (error) {
+      console.error('Failed to delete profile:', error);
+      throw error;
     }
-    
-    const result = await dispatch(deleteProfile(profile.id));
-    if (deleteProfile.rejected.match(result)) {
-      throw new Error(result.payload as string);
-    }
-  }, [dispatch, profile?.id]);
-
-  // Upload avatar
-  const uploadProfileAvatar = useCallback(async (file: File) => {
-    if (!profile?.id) {
-      throw new Error('No profile ID available');
-    }
-    
-    const result = await dispatch(uploadAvatar({ profileId: profile.id, file }));
-    if (uploadAvatar.rejected.match(result)) {
-      throw new Error(result.payload as string);
-    }
-  }, [dispatch, profile?.id]);
-
-  // Upload resume
-  const uploadProfileResume = useCallback(async (file: File) => {
-    if (!profile?.id) {
-      throw new Error('No profile ID available');
-    }
-    
-    const result = await dispatch(uploadResume({ profileId: profile.id, file }));
-    if (uploadResume.rejected.match(result)) {
-      throw new Error(result.payload as string);
-    }
-  }, [dispatch, profile?.id]);
-
-  // Update local profile (optimistic updates)
-  const updateLocalProfile = useCallback((updates: Partial<Profile>) => {
-    dispatch(updateCurrentProfileLocal(updates));
   }, [dispatch]);
 
-  // Mark form as dirty/clean
-  const markFormDirty = useCallback((dirty: boolean) => {
-    dispatch(setFormDirty(dirty));
+  // Fetch all profiles
+  const fetchAllProfiles = useCallback(async () => {
+    try {
+      const result = await dispatch(fetchProfiles()).unwrap();
+      return result;
+    } catch (error) {
+      console.error('Failed to fetch profiles:', error);
+      throw error;
+    }
   }, [dispatch]);
 
-  // Clear error
+  // Set current profile manually
+  const setCurrentUserProfile = useCallback((profile: Profile) => {
+    dispatch(setCurrentProfile(profile));
+  }, [dispatch]);
+
+  // Clear current profile
+  const clearCurrentUserProfile = useCallback(() => {
+    dispatch(clearCurrentProfile());
+  }, [dispatch]);
+
+  // Clear any errors
   const clearProfileError = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
 
-  // Auto-fetch profile on mount if not present
-  useEffect(() => {
-    if (!profile && !isLoading && !error) {
-      fetchProfile();
-    }
-  }, [profile, isLoading, error, fetchProfile]);
+  // Reset profile state
+  const resetProfile = useCallback(() => {
+    dispatch(clearCurrentProfile());
+    dispatch(clearError());
+  }, [dispatch]);
 
   return {
     // State
-    profile,
-    isLoading,
-    isUpdating,
-    error,
-    isDirty,
+    currentProfile: profileState.currentProfile,
+    profiles: profileState.profiles,
+    loading: profileState.loading,
+    error: profileState.error,
+    isCreating: profileState.isCreating,
+    isUpdating: profileState.isUpdating,
 
     // Actions
-    fetchProfile,
-    fetchProfileById: fetchProfileByIdCallback,
-    createNewProfile,
-    updateProfileData,
-    deleteCurrentProfile,
-    uploadProfileAvatar,
-    uploadProfileResume,
-    updateLocalProfile,
-    markFormDirty,
-    clearProfileError,
+    fetchProfile: fetchUserProfile,
+    fetchMyProfile: fetchCurrentProfile,
+    createProfile: createNewProfile,
+    updateProfile: updateCurrentProfile,
+    deleteProfile: deleteCurrentProfile,
+    fetchProfiles: fetchAllProfiles,
+    setCurrentProfile: setCurrentUserProfile,
+    clearCurrentProfile: clearCurrentUserProfile,
+    clearError: clearProfileError,
+    resetProfile,
+
+    // Computed values
+    hasProfile: !!profileState.currentProfile,
+    isJobSeeker: profileState.currentProfile?.role === 'jobseeker',
+    isEmployer: profileState.currentProfile?.role === 'employer',
+    isAdmin: profileState.currentProfile?.role === 'admin',
+    isProfileComplete: profileState.currentProfile?.isComplete || false,
   };
-}
+};

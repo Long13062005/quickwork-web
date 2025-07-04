@@ -8,11 +8,12 @@ import { motion } from 'framer-motion';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { ThemeToggle } from '../components/ThemeToggle';
 import QuickworkLogo from '../assets/Quickwork_logo.png';
-import type { ProfileApiOutput } from '../features/profile/types/profile.types';
+// TODO: Re-import when profile module is rebuilt
+// import type { ProfileApiOutput } from '../features/profile/types/profile.types';
 
 interface LocationState {
   profileType: 'job_seeker' | 'employer';
-  submittedData: ProfileApiOutput;
+  submittedData: any; // TODO: Replace with proper type when profile module is rebuilt
 }
 
 export default function ProfileSuccess(): React.JSX.Element {
@@ -193,7 +194,7 @@ export default function ProfileSuccess(): React.JSX.Element {
           </Link>
           
           <Link
-            to="/dashboard"
+            to={isJobSeeker ? '/dashboard' : '/employer/dashboard'}
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-center font-medium"
           >
             Go to Dashboard

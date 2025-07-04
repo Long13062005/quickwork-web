@@ -14,12 +14,35 @@ export const login = createAsyncThunk<
   }
 });
 
-export const fetchProfile = createAsyncThunk<UserProfile>(
-  'auth/fetchProfile', async () => {
-    const res = await authAPI.getProfile();
-    return res.data;
+// Add authentication check on app startup
+export const checkAuthStatus = createAsyncThunk<
+  boolean,
+  void,
+  { rejectValue: string }
+>('auth/checkAuthStatus', async () => {
+  try {
+    // For cookie-based auth, we need to make a request to check if cookies are valid
+    // We'll make a simple request to a protected endpoint
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:1010/api'}/auth/me`, {
+      method: 'GET',
+      credentials: 'include', // Include cookies
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (response.ok) {
+      console.log('AuthSlice: User is authenticated (cookies valid)');
+      return true;
+    } else {
+      console.log('AuthSlice: User is not authenticated (cookies invalid/missing)');
+      return false;
+    }
+  } catch (err: any) {
+    console.log('AuthSlice: Auth check failed, assuming not authenticated');
+    return false; // Assume not authenticated if check fails
   }
-);
+});
 
 export const register = createAsyncThunk<
   UserProfile,
@@ -48,19 +71,21 @@ export const checkEmailExist = createAsyncThunk<
 });
 
 interface AuthState { 
-  user: UserProfile | null; 
+  isAuthenticated: boolean;
   status: string; 
   error: string | null;
   emailExists: boolean | null;
   emailCheckStatus: string;
+  isInitialized: boolean; // Track if auth check is complete
 }
 
 const initialState: AuthState = { 
-  user: null, 
+  isAuthenticated: false,
   status: 'idle', 
   error: null,
   emailExists: null,
-  emailCheckStatus: 'idle'
+  emailCheckStatus: 'idle',
+  isInitialized: false // Start as false, will be true after auth check
 };
 
 const authSlice = createSlice({
@@ -68,7 +93,9 @@ const authSlice = createSlice({
   initialState,
   reducers: { 
     logout(state) { 
-      state.user = null; 
+      state.isAuthenticated = false;
+      state.isInitialized = true; // Keep initialized state
+      state.status = 'idle'; 
     },
     clearEmailCheck(state) {
       state.emailExists = null;
@@ -79,12 +106,12 @@ const authSlice = createSlice({
     builder
       // Login cases
       .addCase(login.pending, (s) => { s.status = 'loading'; s.error = null; })
-      .addCase(login.fulfilled, (s, a) => { s.status = 'succeeded'; s.user = a.payload; })
+      .addCase(login.fulfilled, (s) => { s.status = 'succeeded'; s.isAuthenticated = true; })
       .addCase(login.rejected, (s, a) => { s.status = 'failed'; s.error = a.payload as string; })
       
       // Register cases
       .addCase(register.pending, (s) => { s.status = 'loading'; s.error = null; })
-      .addCase(register.fulfilled, (s, a) => { s.status = 'succeeded'; s.user = a.payload; })
+      .addCase(register.fulfilled, (s) => { s.status = 'succeeded'; s.isAuthenticated = true; })
       .addCase(register.rejected, (s, a) => { s.status = 'failed'; s.error = a.payload as string; })
       
       // Email check cases
@@ -92,8 +119,20 @@ const authSlice = createSlice({
       .addCase(checkEmailExist.fulfilled, (s, a) => { s.emailCheckStatus = 'succeeded'; s.emailExists = a.payload; })
       .addCase(checkEmailExist.rejected, (s, a) => { s.emailCheckStatus = 'failed'; s.error = a.payload as string; })
       
-      // Fetch profile case
-      .addCase(fetchProfile.fulfilled, (s, a) => { s.user = a.payload; });
+      // Auth status check cases
+      .addCase(checkAuthStatus.pending, (s) => { s.status = 'loading'; s.isInitialized = false; })
+      .addCase(checkAuthStatus.fulfilled, (s, a) => { 
+        s.status = 'succeeded'; 
+        s.isAuthenticated = a.payload; 
+        s.isInitialized = true;
+        s.error = null;
+      })
+      .addCase(checkAuthStatus.rejected, (s) => { 
+        s.status = 'idle'; 
+        s.isAuthenticated = false; 
+        s.isInitialized = true;
+        s.error = null; // Don't show error for unauthenticated state
+      });
   },
 });
 

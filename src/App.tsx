@@ -18,11 +18,20 @@ const ProfileSuccess = lazy(() => import('./pages/ProfileSuccess'))
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
 const EmployerDashboard = lazy(() => import('./pages/EmployerDashboard'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const ChangePassword = lazy(() => import('./pages/ChangePassword'))
 
 // Lazy load profile components
 const JobSeekerProfile = lazy(() => import('./features/profile/components/JobSeekerProfile'))
 const EmployerProfile = lazy(() => import('./features/profile/components/EmployerProfile'))
 const AdminProfile = lazy(() => import('./features/profile/components/AdminProfile'))
+
+// Lazy load job components
+const JobListing = lazy(() => import('./pages/JobListing'))
+const JobDetail = lazy(() => import('./pages/JobDetail'))
+const JobManagement = lazy(() => import('./pages/JobManagement'))
+
+// Lazy load application components
+const MyApplications = lazy(() => import('./pages/MyApplications'))
 
 
 function App() {
@@ -66,6 +75,29 @@ function App() {
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requireAuth={true} requireProfile={true}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            
+            {/* Change Password route - requires authentication */}
+            <Route path="/change-password" element={
+              <ProtectedRoute requireAuth={true} requireProfile={false}>
+                <ChangePassword />
+              </ProtectedRoute>
+            } />
+            
+            {/* Job routes */}
+            <Route path="/jobs" element={<JobListing />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/jobs/manage" element={
+              <ProtectedRoute requireAuth={true} requireProfile={true}>
+                <JobManagement />
+              </ProtectedRoute>
+            } />
+            
+            {/* Application routes */}
+            <Route path="/applications" element={
+              <ProtectedRoute requireAuth={true} requireProfile={true}>
+                <MyApplications />
               </ProtectedRoute>
             } />
             

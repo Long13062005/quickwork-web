@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
@@ -537,31 +537,22 @@ export default function UserDashboard() {
             >
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <button 
-                  onClick={() => navigate('/jobs/search')}
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                <NavLink 
+                  to="/jobs"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <SearchIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Search Jobs</span>
-                </button>
-                <button 
-                  onClick={() => {
-                    // Navigate to the appropriate profile based on role
-                    if (currentProfile?.role === 'jobseeker') {
-                      navigate('/profile/job-seeker');
-                    } else if (currentProfile?.role === 'employer') {
-                      navigate('/profile/employer');
-                    } else if (currentProfile?.role === 'admin') {
-                      navigate('/profile/admin');
-                    } else {
-                      navigate('/profile');
-                    }
-                  }}
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  <span className="text-gray-700 dark:text-gray-200">Browse Jobs</span>
+                </NavLink>
+                
+                <NavLink 
+                  to="/profile/job-seeker"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <UserIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
                   <span className="text-gray-700 dark:text-gray-200">Update Profile</span>
-                </button>
+                </NavLink>
+                
                 <button 
                   onClick={() => navigate('/resume')}
                   className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
@@ -569,6 +560,14 @@ export default function UserDashboard() {
                   <DocumentIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
                   <span className="text-gray-700 dark:text-gray-200">Upload Resume</span>
                 </button>
+                
+                <NavLink 
+                  to="/change-password"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                >
+                  <CogIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-200">Change Password</span>
+                </NavLink>
               </div>
             </motion.div>
 

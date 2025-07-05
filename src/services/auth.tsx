@@ -3,6 +3,7 @@ import { clearAuthCookies } from '../utils/cookieUtils';
 
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload { email: string; password: string; }
+export interface ChangePasswordPayload { currentPassword: string; newPassword: string; confirmPassword: string; }
 // Updated to match backend ProfileEntity structure
 export interface UserProfile { 
   id: number; 
@@ -25,6 +26,7 @@ export interface UserProfile {
 export const authAPI = {
   login: (data: LoginPayload) => api.post<UserProfile>('/auth/login', data),
   register: (data: RegisterPayload) => api.post<UserProfile>('/auth/register', data),
+  changePassword: (data: ChangePasswordPayload) => api.post('/auth/change-password', data),
   checkEmailExist: (email: string) => api.get<boolean>(`/auth/check-email?email=${encodeURIComponent(email)}`),
   logout: async () => {
     console.log('authAPI: Starting logout process...');

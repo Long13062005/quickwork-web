@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
@@ -504,6 +504,23 @@ export default function AdminDashboard() {
                 <ChartIcon className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-3" />
                 <span className="text-gray-700 dark:text-gray-300">View Analytics</span>
               </button>
+              
+              <NavLink 
+                to="/profile/admin"
+                className="w-full flex items-center px-4 py-3 text-left bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-lg transition-colors no-underline"
+              >
+                <UsersIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
+                <span className="text-gray-700 dark:text-gray-300">Update Profile</span>
+              </NavLink>
+              
+              <NavLink 
+                to="/change-password"
+                className="w-full flex items-center px-4 py-3 text-left bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 rounded-lg transition-colors no-underline"
+              >
+                <CogIcon className="w-5 h-5 text-orange-600 dark:text-orange-400 mr-3" />
+                <span className="text-gray-700 dark:text-gray-300">Change Password</span>
+              </NavLink>
+              
               <button 
                 onClick={() => navigate('/admin/settings')}
                 className="w-full flex items-center px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"

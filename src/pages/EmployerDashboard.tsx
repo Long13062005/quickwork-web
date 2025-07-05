@@ -6,7 +6,7 @@
 
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
@@ -54,12 +54,6 @@ const CogIcon = ({ className }: { className?: string }) => (
 const UserIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
-
-const SearchIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
 
@@ -484,27 +478,36 @@ export default function EmployerDashboard() {
             >
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <button 
-                  onClick={() => navigate('/jobs/post')}
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                <NavLink 
+                  to="/jobs/manage"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
-                  <PlusIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Post New Job</span>
-                </button>
-                <button 
-                  onClick={() => navigate('/candidates/search')}
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  <span className="text-gray-400 dark:text-gray-300 mr-3">📋</span>
+                  <span className="text-gray-700 dark:text-gray-200">Manage Jobs</span>
+                </NavLink>
+                <NavLink 
+                  to="/jobs"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
-                  <SearchIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Search Candidates</span>
-                </button>
-                <button 
-                  onClick={() => navigate('/company/profile')}
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                  <span className="text-gray-400 dark:text-gray-300 mr-3">🔍</span>
+                  <span className="text-gray-700 dark:text-gray-200">Browse Jobs</span>
+                </NavLink>
+                
+                <NavLink 
+                  to="/profile/employer"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <UserIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
                   <span className="text-gray-700 dark:text-gray-200">Company Profile</span>
-                </button>
+                </NavLink>
+                
+                <NavLink 
+                  to="/change-password"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                >
+                  <CogIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-200">Change Password</span>
+                </NavLink>
               </div>
             </motion.div>
 

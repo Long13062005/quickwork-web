@@ -4,7 +4,7 @@ export type ProfileType = 'JOB_SEEKER' | 'EMPLOYER' | 'ADMIN';
 // Frontend-friendly profile interface that matches backend ProfileEntity exactly
 export interface ProfileData {
   id?: number; // Optional for create requests
-  userId: number;
+  userId?: number; // Optional - backend doesn't provide this field
   profileType: ProfileType;
   fullName: string;
   avatarUrl?: string | null;
@@ -41,7 +41,7 @@ export interface AdminProfile extends BaseProfile {
 
 export interface BaseProfile {
   id: string;
-  userId: string;
+  userId?: string; // Optional - backend doesn't provide this field
   role: UserRole;
   email: string;
   // Convert backend fields to legacy format for compatibility

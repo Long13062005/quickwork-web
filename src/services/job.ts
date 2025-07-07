@@ -6,9 +6,33 @@ import { api } from './api';
 import type { 
   JobResponse, 
   JobRequest, 
-  JobPageResponse, 
+  JobPageResponse,
+  JobEntityPageResponse,
   JobSearchParams
 } from '../types/job.types';
+
+/**
+ * Validate numeric ID to prevent NaN errors
+ */
+const validateJobId = (id: number): void => {
+  if (!Number.isInteger(id) || id <= 0 || isNaN(id)) {
+    throw new Error(`Invalid job ID: ${id}. Job ID must be a positive integer.`);
+  }
+};
+
+/**
+ * Safely parse job ID from string
+ */
+export const parseJobId = (idString: string | undefined): number | null => {
+  if (!idString) return null;
+  
+  const id = Number(idString);
+  if (Number.isInteger(id) && id > 0) {
+    return id;
+  }
+  
+  return null;
+};
 
 /**
  * Job API endpoints
@@ -39,6 +63,7 @@ export class JobAPI {
    * Get job by ID
    */
   static async getJobById(id: number): Promise<JobResponse> {
+    validateJobId(id); // Validate the job ID
     const response = await api.get<JobResponse>(JOB_ENDPOINTS.JOB_BY_ID(id));
     return response.data;
   }
@@ -55,6 +80,7 @@ export class JobAPI {
    * Update job (requires EMPLOYER role)
    */
   static async updateJob(id: number, jobData: JobRequest): Promise<JobResponse> {
+    validateJobId(id); // Validate the job ID
     const response = await api.put<JobResponse>(JOB_ENDPOINTS.JOB_BY_ID(id), jobData);
     return response.data;
   }
@@ -63,14 +89,15 @@ export class JobAPI {
    * Delete job (requires EMPLOYER role)
    */
   static async deleteJob(id: number): Promise<void> {
+    validateJobId(id); // Validate the job ID
     await api.delete(JOB_ENDPOINTS.JOB_BY_ID(id));
   }
 
   /**
-   * Search jobs by keyword
+   * Search jobs by keyword (returns JobEntity format)
    */
-  static async searchJobs(keyword: string, page: number = 0, size: number = 10): Promise<JobPageResponse> {
-    const response = await api.get<JobPageResponse>(JOB_ENDPOINTS.SEARCH, {
+  static async searchJobs(keyword: string, page: number = 0, size: number = 10): Promise<JobEntityPageResponse> {
+    const response = await api.get<JobEntityPageResponse>(JOB_ENDPOINTS.SEARCH, {
       params: { keyword, page, size }
     });
     return response.data;

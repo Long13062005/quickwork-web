@@ -22,9 +22,8 @@ const convertBackendToLegacyProfile = (backendProfile: ProfileData): Profile => 
   }
   
   // Log warning if userId is missing but don't throw error
-  if (backendProfile.userId === undefined || backendProfile.userId === null) {
-    console.warn('ProfileSlice: Backend profile missing userId field, using fallback value');
-  }
+  // Note: Backend doesn't provide userId field - this is expected behavior
+  // We'll use the profile id instead for internal tracking
   
   const fullNameParts = backendProfile.fullName.split(' ');
   const firstName = fullNameParts[0] || '';
@@ -32,7 +31,7 @@ const convertBackendToLegacyProfile = (backendProfile: ProfileData): Profile => 
   
   const baseProfile = {
     id: backendProfile.id?.toString() || '',
-    userId: backendProfile.userId?.toString() || '0', // Fallback to '0' if userId is missing
+    userId: backendProfile.id?.toString(), // Use profile id as userId since backend doesn't provide separate userId
     email: '', // Email not available in current ProfileData structure
     firstName,
     lastName,

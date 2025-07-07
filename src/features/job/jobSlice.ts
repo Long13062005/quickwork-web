@@ -7,9 +7,31 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import type { 
   JobResponse, 
   JobRequest, 
-  JobSearchParams 
+  JobSearchParams,
+  JobEntity
 } from '../../types/job.types';
 import { jobAPI } from '../../services/job';
+
+/**
+ * Utility function to convert JobEntity to JobResponse format
+ */
+const convertJobEntityToResponse = (entity: JobEntity): JobResponse => {
+  return {
+    id: entity.id,
+    title: entity.title,
+    description: entity.description,
+    location: entity.location,
+    minSalary: entity.minSalary,
+    maxSalary: entity.maxSalary,
+    type: entity.type,
+    employer: entity.employer,
+    postedDate: entity.postedDate,
+    requiredSkills: entity.requiredSkills,
+    requiredExperience: entity.requiredExperience,
+    applicationDeadline: entity.applicationDeadline,
+    status: entity.status,
+  };
+};
 
 /**
  * Job state interface
@@ -59,36 +81,76 @@ export const fetchJobs = createAsyncThunk(
 // Get job by ID
 export const fetchJobById = createAsyncThunk(
   'job/fetchJobById',
-  async (id: number) => {
-    const response = await jobAPI.getJobById(id);
-    return response;
+  async (id: number, { rejectWithValue }) => {
+    try {
+      // Validate the ID before making the API call
+      if (!Number.isInteger(id) || id <= 0 || isNaN(id)) {
+        throw new Error(`Invalid job ID: ${id}`);
+      }
+      const response = await jobAPI.getJobById(id);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch job');
+    }
   }
 );
 
 // Create job
 export const createJob = createAsyncThunk(
   'job/createJob',
-  async (jobData: JobRequest) => {
-    const response = await jobAPI.createJob(jobData);
-    return response;
+  async (jobData: JobRequest, { rejectWithValue }) => {
+    try {
+      const response = await jobAPI.createJob(jobData);
+      return response;
+    } catch (error: any) {
+      // Handle backend error response format
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      }
+      return rejectWithValue(error.message || 'Failed to create job');
+    }
   }
 );
 
 // Update job
 export const updateJob = createAsyncThunk(
   'job/updateJob',
-  async ({ id, jobData }: { id: number; jobData: JobRequest }) => {
-    const response = await jobAPI.updateJob(id, jobData);
-    return response;
+  async ({ id, jobData }: { id: number; jobData: JobRequest }, { rejectWithValue }) => {
+    try {
+      // Validate the ID before making the API call
+      if (!Number.isInteger(id) || id <= 0 || isNaN(id)) {
+        throw new Error(`Invalid job ID: ${id}`);
+      }
+      const response = await jobAPI.updateJob(id, jobData);
+      return response;
+    } catch (error: any) {
+      // Handle backend error response format
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      }
+      return rejectWithValue(error.message || 'Failed to update job');
+    }
   }
 );
 
 // Delete job
 export const deleteJob = createAsyncThunk(
   'job/deleteJob',
-  async (id: number) => {
-    await jobAPI.deleteJob(id);
-    return id;
+  async (id: number, { rejectWithValue }) => {
+    try {
+      // Validate the ID before making the API call
+      if (!Number.isInteger(id) || id <= 0 || isNaN(id)) {
+        throw new Error(`Invalid job ID: ${id}`);
+      }
+      await jobAPI.deleteJob(id);
+      return id;
+    } catch (error: any) {
+      // Handle backend error response format
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      }
+      return rejectWithValue(error.message || 'Failed to delete job');
+    }
   }
 );
 
@@ -97,16 +159,29 @@ export const searchJobs = createAsyncThunk(
   'job/searchJobs',
   async ({ keyword, page = 0, size = 10 }: { keyword: string; page?: number; size?: number }) => {
     const response = await jobAPI.searchJobs(keyword, page, size);
-    return response;
+    // Convert JobEntity content to JobResponse format for consistency
+    const convertedContent = response.content.map(convertJobEntityToResponse);
+    return {
+      ...response,
+      content: convertedContent
+    };
   }
 );
 
 // Get my jobs (employer)
 export const fetchMyJobs = createAsyncThunk(
   'job/fetchMyJobs',
-  async () => {
-    const response = await jobAPI.getJobsByEmployer();
-    return response;
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await jobAPI.getJobsByEmployer();
+      return response;
+    } catch (error: any) {
+      // Handle backend error response format
+      if (error.response?.data?.error) {
+        return rejectWithValue(error.response.data.error);
+      }
+      return rejectWithValue(error.message || 'Failed to fetch your jobs');
+    }
   }
 );
 
@@ -191,7 +266,7 @@ const jobSlice = createSlice({
       })
       .addCase(createJob.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to create job';
+        state.error = action.payload as string || action.error.message || 'Failed to create job';
       })
       
       // Update job
@@ -222,7 +297,7 @@ const jobSlice = createSlice({
       })
       .addCase(updateJob.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to update job';
+        state.error = action.payload as string || action.error.message || 'Failed to update job';
       })
       
       // Delete job
@@ -247,7 +322,7 @@ const jobSlice = createSlice({
       })
       .addCase(deleteJob.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to delete job';
+        state.error = action.payload as string || action.error.message || 'Failed to delete job';
       })
       
       // Search jobs
@@ -279,7 +354,7 @@ const jobSlice = createSlice({
       })
       .addCase(fetchMyJobs.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to fetch my jobs';
+        state.error = action.payload as string || action.error.message || 'Failed to fetch my jobs';
       })
       
       // Advanced search

@@ -21,6 +21,8 @@ import { useEmailCheck } from '../../hooks/useEmailCheck';
 
 // Components
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { FormField } from '../../components/common/FormField/FormField';
 import { PasswordStrengthIndicator } from '../../components/common/PasswordStrengthIndicator/PasswordStrengthIndicator';
 import { EmailCheckStatus } from '../../components/common/EmailCheckStatus/EmailCheckStatus';
@@ -49,6 +51,7 @@ export default function RegisterForm(): React.JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
   const { status, emailExists, emailCheckStatus } = useAppSelector((s) => s.auth);
+  const { t } = useLanguage();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const formRef = useRef<HTMLFormElement>(null);
   const [scrollY, setScrollY] = useState(0);
@@ -221,9 +224,9 @@ export default function RegisterForm(): React.JSX.Element {
               </div>
             </div>
             <h1 className="text-xl lg:text-2xl font-bold text-zinc-800 dark:text-white mb-1">
-              Join Quickwork
+              {t('auth.register.title')}
             </h1>
-            <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400">Create your account and start your journey</p>
+            <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400">{t('auth.register.subtitle')}</p>
           </div>
 
           {/* Registration Form */}
@@ -827,7 +830,25 @@ export default function RegisterForm(): React.JSX.Element {
         </motion.div>
       </div>
 
-      <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
+      <div className="absolute top-4 left-4 lg:top-6 lg:left-6">
+        <motion.button
+          onClick={() => navigate('/auth/before')}
+          className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm hover:shadow-md"
+          whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+          whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+          initial={{ opacity: 0, x: shouldReduceMotion ? 0 : -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: shouldReduceMotion ? 0 : 0.3 }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>{t('auth.back')}</span>
+        </motion.button>
+      </div>
+
+      <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center space-x-3">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
     </div>

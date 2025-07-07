@@ -12,6 +12,8 @@ import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Simple SVG icons as components
 const UsersIcon = ({ className }: { className?: string }) => (
@@ -73,6 +75,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const { currentProfile, loading, fetchMyProfile } = useProfile();
+  const { t } = useLanguage();
   
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
@@ -87,7 +90,7 @@ export default function AdminDashboard() {
 
   const handleLogout = useCallback(async () => {
     try {
-      toast.loading('Logging out...', { id: 'logout' });
+      toast.loading(t('dashboard.user.loggingOut'), { id: 'logout' });
       
       // Set a timeout to dismiss the loading toast if navigation takes too long
       const timeoutId = setTimeout(() => {
@@ -108,7 +111,7 @@ export default function AdminDashboard() {
     } catch (error: any) {
       console.error('Logout error:', error);
       // Replace the loading toast with an error toast
-      toast.error('Logout failed. Please try again.', { id: 'logout' });
+      toast.error(t('dashboard.user.logoutFailed'), { id: 'logout' });
       
       // Redirect to auth page even if logout failed
       navigate('/auth');
@@ -212,13 +215,14 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Admin Dashboard
+                {t('dashboard.admin.title')}
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
-                System management and user administration
+                {t('dashboard.admin.subtitle')}
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
               <ThemeToggle variant="compact" />
               <button className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors">
                 <BellIcon className="w-6 h-6" />
@@ -259,7 +263,7 @@ export default function AdminDashboard() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
                   />
                 </svg>
-                <span>Logout</span>
+                <span>{t('dashboard.admin.logout')}</span>
               </motion.button>
               
               {/* Admin Avatar - Clickable to edit profile */}
@@ -298,7 +302,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg self-start">
                 <UsersIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.totalUsers')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUsers}</p>
             </div>
           </motion.div>
@@ -313,7 +317,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg self-start">
                 <BriefcaseIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">Total Jobs</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.totalJobs')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalJobs}</p>
             </div>
           </motion.div>
@@ -328,7 +332,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg self-start">
                 <UsersIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">New Signups</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.newSignups')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.newSignups}</p>
             </div>
           </motion.div>
@@ -343,7 +347,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg self-start">
                 <BriefcaseIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">Active Jobs</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.activeJobs')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeJobs}</p>
             </div>
           </motion.div>
@@ -358,7 +362,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg self-start">
                 <ShieldIcon className="w-6 h-6 text-red-600 dark:text-red-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">Flagged Content</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.flaggedContent')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.flaggedContent}</p>
             </div>
           </motion.div>
@@ -373,7 +377,7 @@ export default function AdminDashboard() {
               <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg self-start">
                 <ChartIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">System Health</p>
+              <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">{t('dashboard.admin.systemHealth')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.systemHealth}%</p>
             </div>
           </motion.div>
@@ -391,13 +395,13 @@ export default function AdminDashboard() {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Recent Users
+                    {t('dashboard.admin.recentUsers')}
                   </h2>
                   <button 
                     onClick={() => navigate('/admin/users')}
                     className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                   >
-                    View All Users
+                    {t('dashboard.admin.viewAllUsers')}
                   </button>
                 </div>
               </div>
@@ -406,19 +410,19 @@ export default function AdminDashboard() {
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        User
+                        {t('dashboard.admin.user')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Role
+                        {t('dashboard.admin.role')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Status
+                        {t('dashboard.admin.status')}
                       </th>
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        Last Active
+                        {t('dashboard.admin.lastActive')}
                       </th>
                       <th scope="col" className="relative px-6 py-3">
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">{t('dashboard.admin.actions')}</span>
                       </th>
                     </tr>
                   </thead>
@@ -440,12 +444,12 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 capitalize">
-                            {user.role}
+                            {t(`dashboard.admin.${user.role}`)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(user.status)} capitalize`}>
-                            {user.status}
+                            {t(`dashboard.admin.${user.status}`)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -456,7 +460,7 @@ export default function AdminDashboard() {
                             onClick={() => navigate(`/admin/users/${user.id}`)}
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                           >
-                            View
+                            {t('dashboard.admin.view')}
                           </button>
                         </td>
                       </tr>
@@ -474,35 +478,35 @@ export default function AdminDashboard() {
             transition={{ delay: 0.8 }}
             className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Admin Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.admin.adminActions')}</h3>
             <div className="space-y-3">
               <button 
                 onClick={() => navigate('/admin/users/new')}
                 className="w-full flex items-center px-4 py-3 text-left bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
               >
                 <UsersIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Create User</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.createUser')}</span>
               </button>
               <button 
                 onClick={() => navigate('/admin/roles')}
                 className="w-full flex items-center px-4 py-3 text-left bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 rounded-lg transition-colors"
               >
                 <ShieldIcon className="w-5 h-5 text-green-600 dark:text-green-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Manage Roles</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.manageRoles')}</span>
               </button>
               <button 
                 onClick={() => navigate('/admin/jobs/review')}
                 className="w-full flex items-center px-4 py-3 text-left bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 rounded-lg transition-colors"
               >
                 <BriefcaseIcon className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Review Jobs</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.reviewJobs')}</span>
               </button>
               <button 
                 onClick={() => navigate('/admin/analytics')}
                 className="w-full flex items-center px-4 py-3 text-left bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
               >
                 <ChartIcon className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">View Analytics</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.viewAnalytics')}</span>
               </button>
               
               <NavLink 
@@ -510,7 +514,7 @@ export default function AdminDashboard() {
                 className="w-full flex items-center px-4 py-3 text-left bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-lg transition-colors no-underline"
               >
                 <UsersIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Update Profile</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.updateProfile')}</span>
               </NavLink>
               
               <NavLink 
@@ -518,7 +522,7 @@ export default function AdminDashboard() {
                 className="w-full flex items-center px-4 py-3 text-left bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 rounded-lg transition-colors no-underline"
               >
                 <CogIcon className="w-5 h-5 text-orange-600 dark:text-orange-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Change Password</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.changePassword')}</span>
               </NavLink>
               
               <button 
@@ -526,15 +530,15 @@ export default function AdminDashboard() {
                 className="w-full flex items-center px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
                 <CogIcon className="w-5 h-5 text-gray-600 dark:text-gray-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">System Settings</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('dashboard.admin.systemSettings')}</span>
               </button>
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Stats</h4>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">{t('dashboard.admin.quickStats')}</h4>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Storage Usage</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('dashboard.admin.storageUsage')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">43%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
@@ -542,7 +546,7 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="flex justify-between text-sm mt-3">
-                  <span className="text-gray-600 dark:text-gray-400">API Usage</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('dashboard.admin.apiUsage')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">67%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
@@ -550,7 +554,7 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="flex justify-between text-sm mt-3">
-                  <span className="text-gray-600 dark:text-gray-400">Database Load</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('dashboard.admin.databaseLoad')}</span>
                   <span className="font-medium text-gray-900 dark:text-white">28%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">

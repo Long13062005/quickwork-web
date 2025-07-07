@@ -6,8 +6,10 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthFlowGuard } from './components/AuthFlowGuard'
 import { AppInitializer } from './components/AppInitializer'
 import { SmartRedirect } from './components/SmartRedirect'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 // Lazy load components for better performance
+const LandingPage = lazy(() => import('./pages/LandingPage'))
 const Login = lazy(() => import('./pages/Login'))
 const Register = lazy(() => import('./pages/Register'))
 const BeforeAuth = lazy(() => import('./pages/BeforeAuth'))
@@ -36,12 +38,16 @@ const MyApplications = lazy(() => import('./pages/MyApplications'))
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppInitializer>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            {/* Smart root redirect based on authentication status */}
-            <Route path="/" element={<SmartRedirect />} />
+    <LanguageProvider>
+      <BrowserRouter>
+        <AppInitializer>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+            {/* Landing Page Route */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* Smart redirect for authenticated users */}
+            <Route path="/dashboard-redirect" element={<SmartRedirect />} />
             
             {/* Authentication routes */}
             <Route path="/auth" element={<BeforeAuth />} />
@@ -101,6 +107,13 @@ function App() {
               </ProtectedRoute>
             } />
             
+            {/* Application routes */}
+            <Route path="/applications" element={
+              <ProtectedRoute requireAuth={true} requireProfile={true}>
+                <MyApplications />
+              </ProtectedRoute>
+            } />
+            
             {/* Profile routes */}
             <Route path="/profile/job-seeker" element={
               <ProtectedRoute requireAuth={true} requireProfile={false}>
@@ -134,6 +147,7 @@ function App() {
         </Suspense>
       </AppInitializer>
     </BrowserRouter>
+    </LanguageProvider>
   )
 }
 

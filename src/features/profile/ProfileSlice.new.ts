@@ -16,7 +16,7 @@ const convertBackendToLegacyProfile = (backendProfile: ProfileData): Profile => 
   
   const baseProfile = {
     id: backendProfile.id?.toString() || '',
-    userId: backendProfile.userId.toString(),
+    userId: backendProfile.id?.toString(), // Use profile id as userId since backend doesn't provide separate userId
     email: '', // Email not available in current ProfileData structure
     firstName,
     lastName,

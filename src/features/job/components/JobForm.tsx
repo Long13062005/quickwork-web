@@ -15,6 +15,7 @@ interface JobFormProps {
   onCancel: () => void;
   loading?: boolean;
   className?: string;
+  isFirstJob?: boolean; // New prop to indicate if this is the first job
 }
 
 const JobForm: React.FC<JobFormProps> = ({ 
@@ -22,7 +23,8 @@ const JobForm: React.FC<JobFormProps> = ({
   onSubmit, 
   onCancel, 
   loading = false, 
-  className = '' 
+  className = '',
+  isFirstJob = false
 }) => {
   const isEditing = !!job;
 
@@ -60,9 +62,16 @@ const JobForm: React.FC<JobFormProps> = ({
       transition={{ duration: 0.3 }}
     >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          {isEditing ? 'Edit Job' : 'Post a New Job'}
-        </h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {isEditing ? 'Edit Job' : (isFirstJob ? '🚀 Create Your First Job' : 'Post a New Job')}
+          </h2>
+          {isFirstJob && !isEditing && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Welcome! Let's get your first job posting live and start attracting talent.
+            </p>
+          )}
+        </div>
         <button
           onClick={onCancel}
           className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
@@ -290,7 +299,9 @@ const JobForm: React.FC<JobFormProps> = ({
                 disabled={isSubmitting || loading}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                {loading ? '⏳ Saving...' : isEditing ? '✏️ Update Job' : '📝 Post Job'}
+                {loading ? '⏳ Saving...' : 
+                 isEditing ? '✏️ Update Job' : 
+                 isFirstJob ? '🎯 Launch Your First Job' : '📝 Post Job'}
               </button>
               <button
                 type="button"

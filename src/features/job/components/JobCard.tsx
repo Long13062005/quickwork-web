@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import type { JobResponse } from '../../../types/job.types';
 
 interface JobCardProps {
@@ -13,6 +14,8 @@ interface JobCardProps {
 }
 
 const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
+  const { t } = useLanguage();
+  
   const formatSalary = (minSalary: number, maxSalary: number): string => {
     const formatNumber = (num: number): string => {
       if (num >= 1000000) {
@@ -41,10 +44,10 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Yesterday';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    if (diffInDays === 0) return t('jobs.today');
+    if (diffInDays === 1) return t('jobs.yesterday');
+    if (diffInDays < 7) return t('jobs.daysAgo', { days: diffInDays });
+    if (diffInDays < 30) return t('jobs.weeksAgo', { weeks: Math.floor(diffInDays / 7) });
     return date.toLocaleDateString();
   };
 
@@ -53,11 +56,11 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
     const now = new Date();
     const diffInDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffInDays < 0) return 'Expired';
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return 'Tomorrow';
-    if (diffInDays < 7) return `${diffInDays} days left`;
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks left`;
+    if (diffInDays < 0) return t('jobs.expired');
+    if (diffInDays === 0) return t('jobs.today');
+    if (diffInDays === 1) return t('jobs.tomorrow');
+    if (diffInDays < 7) return t('jobs.daysLeft', { days: diffInDays });
+    if (diffInDays < 30) return t('jobs.weeksLeft', { weeks: Math.floor(diffInDays / 7) });
     return date.toLocaleDateString();
   };
 
@@ -77,7 +80,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
             </h3>
             <div className="flex items-center text-gray-600 dark:text-gray-400 mb-2">
               <span className="mr-2">🏢</span>
-              <span className="text-sm">{job.employer?.email || 'Company'}</span>
+              <span className="text-sm">{job.employer?.email || t('jobs.company')}</span>
             </div>
           </div>
           <div className="flex flex-col items-end">
@@ -122,7 +125,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
         {/* Required Skills Preview */}
         {job.requiredSkills && job.requiredSkills.length > 0 && (
           <div className="border-t border-gray-200 dark:border-zinc-700 pt-3">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Required Skills:</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('jobs.requiredSkills')}</p>
             <div className="flex flex-wrap gap-1">
               {job.requiredSkills.slice(0, 3).map((skill, index) => (
                 <span key={index} className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
@@ -131,7 +134,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onClick, className = '' }) => {
               ))}
               {job.requiredSkills.length > 3 && (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  +{job.requiredSkills.length - 3} more
+                  {t('jobs.moreSkills', { count: job.requiredSkills.length - 3 })}
                 </span>
               )}
             </div>

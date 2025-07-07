@@ -12,6 +12,8 @@ import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { JobSeekerProfile, EmployerProfile, AdminProfile } from '../features/profile/types/profile.types';
 
 // Simple SVG icons as components
@@ -52,22 +54,9 @@ const BellIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const CogIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-
-const HeartIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-  </svg>
-);
-
 const CheckIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
 
@@ -79,7 +68,20 @@ const ClockIcon = ({ className }: { className?: string }) => (
 
 const XIcon = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const HeartIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+  </svg>
+);
+
+const CogIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
   </svg>
 );
 
@@ -115,6 +117,7 @@ export default function UserDashboard() {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const { currentProfile, loading, fetchMyProfile } = useProfile();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats>({
     profileViews: 0,
     applications: 0,
@@ -126,7 +129,7 @@ export default function UserDashboard() {
 
   const handleLogout = useCallback(async () => {
     try {
-      toast.loading('Logging out...', { id: 'logout' });
+      toast.loading(t('dashboard.user.loggingOut'), { id: 'logout' });
       
       // Set a timeout to dismiss the loading toast if navigation takes too long
       const timeoutId = setTimeout(() => {
@@ -147,7 +150,7 @@ export default function UserDashboard() {
     } catch (error: any) {
       console.error('Logout error:', error);
       // Replace the loading toast with an error toast
-      toast.error('Logout failed. Please try again.', { id: 'logout' });
+      toast.error(t('dashboard.user.logoutFailed'), { id: 'logout' });
       
       // Redirect to auth page even if logout failed
       navigate('/auth');
@@ -299,6 +302,16 @@ export default function UserDashboard() {
     }
   };
 
+  const getStatusText = (status: Application['status']) => {
+    switch (status) {
+      case 'accepted': return t('dashboard.activity.accepted');
+      case 'interview': return t('dashboard.activity.interview');
+      case 'reviewing': return t('dashboard.activity.reviewing');
+      case 'rejected': return t('dashboard.activity.rejected');
+      default: return t('dashboard.activity.pending');
+    }
+  };
+
   // TODO: Re-implement loading state when profile module is rebuilt
   if (loading) {
     return <PageLoader />;
@@ -312,15 +325,18 @@ export default function UserDashboard() {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Welcome back, {currentProfile?.firstName && currentProfile?.lastName ? 
-                  `${currentProfile.firstName} ${currentProfile.lastName}` : 
-                  currentProfile?.firstName ? currentProfile.firstName : 'User'}!
+                {t('dashboard.user.welcomeBack').replace('{name}', 
+                  currentProfile?.firstName && currentProfile?.lastName ? 
+                    `${currentProfile.firstName} ${currentProfile.lastName}` : 
+                    currentProfile?.firstName ? currentProfile.firstName : 'User'
+                )}
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
-                Ready to find your next opportunity?
+                {t('dashboard.user.readyToFind')}
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
               <ThemeToggle variant="compact" />
               <button className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors">
                 <BellIcon className="w-6 h-6" />
@@ -329,10 +345,11 @@ export default function UserDashboard() {
               {/* Profile info loaded from profile API */}
               <span className="text-sm text-gray-600 dark:text-gray-300">
                 {currentProfile ? 
-                  `${currentProfile.role === 'jobseeker' ? 'Job Seeker' : 
-                     currentProfile.role === 'employer' ? 'Employer' : 
-                     currentProfile.role === 'admin' ? 'Admin' : 'User'} Profile` : 
-                  'Loading profile...'
+                  (currentProfile.role === 'jobseeker' ? t('dashboard.user.jobSeekerProfile') : 
+                   currentProfile.role === 'employer' ? t('dashboard.user.employerProfile') : 
+                   currentProfile.role === 'admin' ? t('dashboard.user.adminProfile') : 
+                   t('dashboard.user.userProfile')) : 
+                  t('dashboard.user.loadingProfile')
                 }
               </span>
               
@@ -357,7 +374,7 @@ export default function UserDashboard() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
                   />
                 </svg>
-                <span>Logout</span>
+                <span>{t('dashboard.user.logout')}</span>
               </motion.button>
               <button 
                 onClick={() => navigate('/profile')}
@@ -379,7 +396,7 @@ export default function UserDashboard() {
                   }
                 }}
                 className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors"
-                title="Edit your profile"
+                title={t('dashboard.user.editProfile')}
               >
                 {currentProfile?.profilePicture ? (
                   <img 
@@ -412,7 +429,7 @@ export default function UserDashboard() {
                 <EyeIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Profile Views</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.profileViews')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.profileViews}</p>
               </div>
             </div>
@@ -429,7 +446,7 @@ export default function UserDashboard() {
                 <DocumentIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Applications</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.applications')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.applications}</p>
               </div>
             </div>
@@ -446,7 +463,7 @@ export default function UserDashboard() {
                 <UserIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Interviews</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.interviews')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.interviews}</p>
               </div>
             </div>
@@ -463,7 +480,7 @@ export default function UserDashboard() {
                 <ChartIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Profile Complete</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.profileComplete')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.profileCompletion}%</p>
               </div>
             </div>
@@ -482,13 +499,13 @@ export default function UserDashboard() {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Recommended Jobs
+                    {t('dashboard.jobs.recommendedJobs')}
                   </h2>
                   <button 
                     onClick={() => navigate('/jobs')}
                     className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                   >
-                    View All
+                    {t('dashboard.jobs.viewAll')}
                   </button>
                 </div>
               </div>
@@ -501,12 +518,17 @@ export default function UserDashboard() {
                         <p className="text-gray-600 dark:text-gray-300">{job.company}</p>
                         <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                           <span>{job.location}</span>
-                          <span className="capitalize">{job.type.replace('_', ' ')}</span>
+                          <span className="capitalize">
+                            {job.type === 'full_time' ? t('dashboard.jobs.fullTime') :
+                             job.type === 'part_time' ? t('dashboard.jobs.partTime') :
+                             job.type === 'contract' ? t('dashboard.jobs.contract') :
+                             t('dashboard.jobs.remote')}
+                          </span>
                           <span>{job.salary}</span>
                         </div>
                         <div className="flex items-center mt-2">
                           <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 px-2 py-1 rounded-full">
-                            {job.matched}% match
+                            {job.matched}% {t('dashboard.jobs.match')}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{job.posted}</span>
                         </div>
@@ -516,7 +538,7 @@ export default function UserDashboard() {
                           <HeartIcon className="w-5 h-5" />
                         </button>
                         <button className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors">
-                          Apply
+                          {t('dashboard.jobs.apply')}
                         </button>
                       </div>
                     </div>
@@ -535,14 +557,14 @@ export default function UserDashboard() {
               transition={{ delay: 0.6 }}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.actions.quickActions')}</h3>
               <div className="space-y-3">
                 <NavLink 
                   to="/jobs"
                   className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <SearchIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Browse Jobs</span>
+                  <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.browseJobs')}</span>
                 </NavLink>
                 
                 <NavLink 
@@ -550,7 +572,7 @@ export default function UserDashboard() {
                   className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <UserIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Update Profile</span>
+                  <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.editProfile')}</span>
                 </NavLink>
                 
                 <button 
@@ -558,7 +580,7 @@ export default function UserDashboard() {
                   className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
                 >
                   <DocumentIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Upload Resume</span>
+                  <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.updateResume')}</span>
                 </button>
                 
                 <NavLink 
@@ -566,7 +588,7 @@ export default function UserDashboard() {
                   className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
                 >
                   <CogIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Change Password</span>
+                  <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.changePassword')}</span>
                 </NavLink>
               </div>
             </motion.div>
@@ -579,12 +601,12 @@ export default function UserDashboard() {
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Applications</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.activity.recentApplications')}</h3>
                 <button 
                   onClick={() => navigate('/applications')}
                   className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium"
                 >
-                  View All
+                  {t('dashboard.jobs.viewAll')}
                 </button>
               </div>
               <div className="space-y-3">
@@ -596,7 +618,7 @@ export default function UserDashboard() {
                     </div>
                     <div className={`flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
                       {getStatusIcon(app.status)}
-                      <span className="ml-1 capitalize">{app.status}</span>
+                      <span className="ml-1 capitalize">{getStatusText(app.status)}</span>
                     </div>
                   </div>
                 ))}

@@ -119,6 +119,21 @@ export interface JobSearchParams {
 }
 
 /**
+ * Job pagination response for search (returns JobEntity)
+ */
+export interface JobEntityPageResponse {
+  content: JobEntity[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  numberOfElements: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}
+
+/**
  * Job pagination response
  */
 export interface JobPageResponse {

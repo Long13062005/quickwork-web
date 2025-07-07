@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { useAppDispatch, useAppSelector } from '../../hooks';
 import { checkEmailExist, clearEmailCheck } from './AuthSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
 import { useNavigate } from 'react-router-dom';
 import { authFlowSession } from '../../utils/authFlowSession';
@@ -13,10 +15,11 @@ export default function BeforeForm() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { emailCheckStatus, error } = useAppSelector((s) => s.auth);
+  const { t } = useLanguage();
   const shouldReduceMotion = useReducedMotion();
 
   const schema = Yup.object({
-    email: Yup.string().email('Invalid Email').required('Email is required'),
+    email: Yup.string().email(t('validation.email.invalid')).required(t('validation.email.required')),
   });
 
   return (
@@ -63,7 +66,7 @@ export default function BeforeForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Get Started
+              {t('beforeAuth.title')}
             </motion.h1>
             <motion.p 
               className="text-zinc-600 dark:text-zinc-400 text-xs lg:text-sm"
@@ -71,7 +74,7 @@ export default function BeforeForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Enter your email to continue to your account
+              {t('beforeAuth.subtitle')}
             </motion.p>
           </motion.div>
 
@@ -93,16 +96,16 @@ export default function BeforeForm() {
               
               if (res.payload) {
                 // Email exists, navigate to login
-                toast.success('Redirecting to login... 🔑');
+                toast.success(t('beforeAuth.redirectingLogin'));
                 navigate('/auth/login', { state: { email: values.email } });
               } else {
                 // Email doesn't exist, navigate to register
-                toast.success('Redirecting to registration... ✨');
+                toast.success(t('beforeAuth.redirectingRegister'));
                 navigate('/auth/register', { state: { email: values.email } });
               }
               resetForm();
             } else {
-              toast.error(res.payload || 'Email check failed ❌');
+              toast.error(res.payload || t('beforeAuth.emailCheckFailed'));
             }
             setSubmitting(false);
           }}
@@ -122,7 +125,7 @@ export default function BeforeForm() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <h4 className="text-xs font-medium text-red-800 dark:text-red-200">Please fix the following errors:</h4>
+                      <h4 className="text-xs font-medium text-red-800 dark:text-red-200">{t('beforeAuth.errorFixMessage')}</h4>
                       <ul className="mt-1 text-xs text-red-700 dark:text-red-300 list-disc list-inside">
                         {errors.email && touched.email && <li>{errors.email}</li>}
                       </ul>
@@ -144,7 +147,7 @@ export default function BeforeForm() {
                         id="email"
                         type="email"
                         autoComplete="username"
-                        placeholder="Enter your email address"
+                        placeholder={t('beforeAuth.emailPlaceholder')}
                         className={`w-full px-2.5 py-2 text-xs lg:text-sm border-2 rounded-lg focus:ring-2 outline-none bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white transition-all duration-300 ${
                           meta.touched && meta.error
                             ? 'border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20 bg-red-50 dark:bg-red-900/10'
@@ -253,7 +256,7 @@ export default function BeforeForm() {
                   <div className="w-full border-t border-pink-200 dark:border-zinc-700"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-white dark:bg-zinc-800 px-3 text-zinc-500 dark:text-zinc-400">or continue with</span>
+                  <span className="bg-white dark:bg-zinc-800 px-3 text-zinc-500 dark:text-zinc-400">{t('beforeAuth.orContinueWith')}</span>
                 </div>
               </motion.div>
 
@@ -276,7 +279,7 @@ export default function BeforeForm() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Coming Soon</span>
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">{t('beforeAuth.comingSoon')}</span>
                 </motion.button>
                 
                 <motion.button
@@ -288,7 +291,7 @@ export default function BeforeForm() {
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                   </svg>
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">Coming Soon</span>
+                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">{t('beforeAuth.comingSoon')}</span>
                 </motion.button>
               </motion.div>
               
@@ -426,7 +429,25 @@ export default function BeforeForm() {
       </div>
     </motion.div>
 
-    <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
+    <div className="absolute top-4 left-4 lg:top-6 lg:left-6">
+      <motion.button
+        onClick={() => navigate('/')}
+        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm hover:shadow-md"
+        whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+        whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+        initial={{ opacity: 0, x: shouldReduceMotion ? 0 : -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2, duration: shouldReduceMotion ? 0 : 0.3 }}
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>{t('beforeAuth.backToHome')}</span>
+      </motion.button>
+    </div>
+
+    <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center space-x-2">
+      <LanguageSwitcher />
       <ThemeToggle />
     </div>
   </div>

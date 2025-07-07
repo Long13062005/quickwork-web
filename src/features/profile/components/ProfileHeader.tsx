@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeToggle } from '../../../components/ThemeToggle';
+import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 
 interface ProfileHeaderProps {
   title: string;
@@ -21,7 +22,10 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ title, subtitle })
               </p>
             )}
           </div>
-          <ThemeToggle />
+          <div className="flex items-center space-x-4">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </div>

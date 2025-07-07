@@ -9,12 +9,15 @@ import { useNavigate } from 'react-router-dom';
 import { fetchJobs, searchJobsAdvanced } from '../features/job/jobSlice';
 import JobCard from '../features/job/components/JobCard';
 import JobSearch from '../features/job/components/JobSearch';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import type { RootState, AppDispatch } from '../store';
 import type { JobResponse, JobSearchParams } from '../types/job.types';
 
 const JobListing: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { jobs, loading, error, totalPages, currentPage, totalElements } = useSelector((state: RootState) => state.job);
   const [searchParams, setSearchParams] = useState<JobSearchParams>({});
   const [isSearching, setIsSearching] = useState(false);
@@ -59,6 +62,11 @@ const JobListing: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Language Switcher */}
+        <div className="flex justify-end mb-4">
+          <LanguageSwitcher />
+        </div>
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -67,10 +75,10 @@ const JobListing: React.FC = () => {
           className="text-center mb-8"
         >
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Find Your Dream Job
+            {t('jobs.findDreamJob')}
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Discover opportunities from top companies and take the next step in your career
+            {t('jobs.discoverOpportunities')}
           </p>
         </motion.div>
 
@@ -92,20 +100,20 @@ const JobListing: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {Object.keys(searchParams).length > 0 ? 'Search Results' : 'All Jobs'}
+                {Object.keys(searchParams).length > 0 ? t('jobs.searchResults') : t('jobs.allJobs')}
               </h2>
               <span className="text-gray-600 dark:text-gray-400">
-                {totalElements} jobs found
+                {totalElements} {t('jobs.jobsFound')}
               </span>
             </div>
             
             {Object.keys(searchParams).length > 0 && (
               <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {searchParams.keyword && `Keywords: "${searchParams.keyword}"`}
-                {searchParams.location && ` • Location: "${searchParams.location}"`}
-                {searchParams.type && ` • Type: ${searchParams.type}`}
-                {searchParams.minSalary && ` • Min Salary: $${searchParams.minSalary.toLocaleString()}`}
-                {searchParams.maxSalary && ` • Max Salary: $${searchParams.maxSalary.toLocaleString()}`}
+                {searchParams.keyword && `${t('jobs.keywords')}: "${searchParams.keyword}"`}
+                {searchParams.location && ` • ${t('jobs.location')}: "${searchParams.location}"`}
+                {searchParams.type && ` • ${t('jobs.type')}: ${searchParams.type}`}
+                {searchParams.minSalary && ` • ${t('jobs.minSalary')}: $${searchParams.minSalary.toLocaleString()}`}
+                {searchParams.maxSalary && ` • ${t('jobs.maxSalary')}: $${searchParams.maxSalary.toLocaleString()}`}
               </div>
             )}
           </motion.div>
@@ -134,7 +142,7 @@ const JobListing: React.FC = () => {
           >
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
             <p className="mt-4 text-gray-600 dark:text-gray-400">
-              {isSearching ? 'Searching jobs...' : 'Loading jobs...'}
+              {isSearching ? t('jobs.searchingJobs') : t('jobs.loadingJobs')}
             </p>
           </motion.div>
         )}
@@ -173,16 +181,16 @@ const JobListing: React.FC = () => {
           >
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              No jobs found
+              {t('jobs.noJobsFound')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Try adjusting your search criteria or browse all available jobs
+              {t('jobs.adjustSearchCriteria')}
             </p>
             <button
               onClick={() => handleSearch({})}
               className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              View All Jobs
+              {t('jobs.viewAllJobs')}
             </button>
           </motion.div>
         )}
@@ -198,7 +206,7 @@ const JobListing: React.FC = () => {
               onClick={handleLoadMore}
               className="bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-900 dark:text-white font-medium py-2 px-6 rounded-md border border-gray-300 dark:border-zinc-600 transition-colors"
             >
-              Load More Jobs
+              {t('jobs.loadMoreJobs')}
             </button>
           </motion.div>
         )}

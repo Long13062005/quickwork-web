@@ -7,6 +7,8 @@ import { login } from './AuthSlice';
 // TODO: Re-import when profile module is rebuilt
 // import { fetchCurrentProfile } from '../profile/ProfileSlice';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { LanguageSwitcher } from '../../components/LanguageSwitcher';
+import { useLanguage } from '../../contexts/LanguageContext';
 import QuickworkLogo from '../../assets/Quickwork_logo.png';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authFlowSession } from '../../utils/authFlowSession';
@@ -16,14 +18,15 @@ export default function LoginForm() {
   const location = useLocation();
   const navigate = useNavigate();
   const { status, error } = useAppSelector((s) => s.auth);
+  const { t } = useLanguage();
   const shouldReduceMotion = useReducedMotion();
 
   // Get pre-filled email from navigation state
   const prefilledEmail = location.state?.email || '';
 
   const schema = Yup.object({
-    email: Yup.string().email('Invalid Email').required('Email is required'),
-    password: Yup.string().min(6, 'Min password is 6').required('Password is required'),
+    email: Yup.string().email(t('validation.email.invalid')).required(t('validation.email.required')),
+    password: Yup.string().min(6, t('validation.password.min')).required(t('validation.password.required')),
   });
 
   return (
@@ -69,7 +72,7 @@ export default function LoginForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Welcome Back
+              {t('auth.login.title')}
             </motion.h1>
             <motion.p 
               className="text-zinc-600 dark:text-zinc-400 text-xs lg:text-sm"
@@ -77,7 +80,7 @@ export default function LoginForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: shouldReduceMotion ? 0 : 0.5 }}
             >
-              Please sign in to your account
+              {t('auth.login.subtitle')}
             </motion.p>
           </motion.div>
 
@@ -87,7 +90,7 @@ export default function LoginForm() {
             onSubmit={async (values, { setSubmitting, resetForm }) => {
               const res = await dispatch(login(values));
               if (login.fulfilled.match(res)) {
-                toast.success('Login successful ✨');
+                toast.success(t('auth.login.success'));
                 resetForm();
                 
                 // Clear auth flow session after successful login
@@ -97,7 +100,7 @@ export default function LoginForm() {
                 // Redirect to home page, SmartRedirect will handle profile checking
                 navigate('/', { replace: true });
               } else {
-                toast.error(res.payload || 'Login failed ❌');
+                toast.error(res.payload || t('auth.login.error'));
               }
               setSubmitting(false);
             }}
@@ -117,7 +120,7 @@ export default function LoginForm() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <div>
-                        <h4 className="text-xs lg:text-sm font-medium text-red-800 dark:text-red-200">Please fix the following errors:</h4>
+                        <h4 className="text-xs lg:text-sm font-medium text-red-800 dark:text-red-200">{t('auth.login.errorFixMessage')}</h4>
                         <ul className="mt-1 text-xs text-red-700 dark:text-red-300 list-disc list-inside">
                           {errors.email && touched.email && <li>{errors.email as string}</li>}
                           {errors.password && touched.password && <li>{errors.password}</li>}
@@ -134,7 +137,7 @@ export default function LoginForm() {
                     transition={{ delay: 0.5, duration: shouldReduceMotion ? 0 : 0.5 }}
                   >
                     <label htmlFor="email" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                      Email Address
+                      {t('auth.login.email')}
                     </label>
                     <Field name="email">
                       {({ field, meta }: any) => (
@@ -144,7 +147,7 @@ export default function LoginForm() {
                             id="email"
                             type="email"
                             autoComplete="username"
-                            placeholder="Enter your email"
+                            placeholder={t('auth.login.emailPlaceholder')}
                             className={`w-full px-2.5 py-2 text-xs lg:text-sm border-2 rounded-lg focus:ring-2 outline-none bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white transition-all duration-300 ${
                               meta.touched && meta.error
                                 ? 'border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20 bg-red-50 dark:bg-red-900/10'
@@ -217,7 +220,7 @@ export default function LoginForm() {
                     transition={{ delay: 0.6, duration: shouldReduceMotion ? 0 : 0.5 }}
                   >
                     <label htmlFor="password" className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                      Password
+                      {t('auth.login.password')}
                     </label>
                     <Field name="password">
                       {({ field, meta }: any) => (
@@ -227,7 +230,7 @@ export default function LoginForm() {
                             id="password"
                             type="password"
                             autoComplete="current-password"
-                            placeholder="Enter your password"
+                            placeholder={t('auth.login.passwordPlaceholder')}
                             className={`w-full px-2.5 py-2 text-xs lg:text-sm border-2 rounded-lg focus:ring-2 outline-none bg-white dark:bg-zinc-800 text-zinc-800 dark:text-white transition-all duration-300 ${
                               meta.touched && meta.error
                                 ? 'border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500/20 bg-red-50 dark:bg-red-900/10'
@@ -352,7 +355,7 @@ export default function LoginForm() {
                     <span className="ml-1.5 text-xs text-zinc-600 dark:text-zinc-400">Remember me</span>
                   </label>
                   <a href="#" className="text-xs text-red-500 dark:text-pink-400 hover:underline">
-                    Forgot password?
+                    {t('auth.login.forgotPassword')}
                   </a>
                 </motion.div>
                 
@@ -391,14 +394,14 @@ export default function LoginForm() {
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Sign in
+                        {t('auth.login.button')}
                       </div>
                     ) : (
                       <div className="flex items-center justify-center">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Sign In
+                        {t('auth.login.button')}
                       </div>
                     )}
                   </motion.button>
@@ -460,9 +463,9 @@ export default function LoginForm() {
                   transition={{ delay: 1.1, duration: shouldReduceMotion ? 0 : 0.5 }}
                 >
                   <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                    Don't have an account?{' '}
+                    {t('auth.login.noAccount')}{' '}
                     <a href="/auth/register" className="text-red-500 dark:text-pink-400 hover:underline font-medium">
-                      Sign up
+                      {t('auth.login.signUp')}
                     </a>
                   </p>
                 </motion.div>
@@ -573,7 +576,25 @@ export default function LoginForm() {
         </div>
       </motion.div>
 
-      <div className="absolute top-4 right-4 lg:top-6 lg:right-6">
+      <div className="absolute top-4 left-4 lg:top-6 lg:left-6">
+        <motion.button
+          onClick={() => navigate('/auth/before')}
+          className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800 transition-all duration-200 shadow-sm hover:shadow-md"
+          whileHover={shouldReduceMotion ? {} : { scale: 1.02 }}
+          whileTap={shouldReduceMotion ? {} : { scale: 0.98 }}
+          initial={{ opacity: 0, x: shouldReduceMotion ? 0 : -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: shouldReduceMotion ? 0 : 0.3 }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>{t('auth.back')}</span>
+        </motion.button>
+      </div>
+
+      <div className="absolute top-4 right-4 lg:top-6 lg:right-6 flex items-center space-x-3">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
     </div>

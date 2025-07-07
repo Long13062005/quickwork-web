@@ -9,6 +9,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchJobById, clearCurrentJob } from '../features/job/jobSlice';
 import { applyForJob, checkApplicationStatus } from '../features/application/applicationSlice';
 import { useProfile } from '../features/profile/hooks/useProfile';
+import { parseJobId } from '../services/job';
 import JobApplicationForm from '../features/application/components/JobApplicationForm';
 import type { RootState, AppDispatch } from '../store';
 import type { JobApplicationRequest } from '../types/application.types';
@@ -29,13 +30,19 @@ const JobDetail: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchJobById(Number(id)));
+      const jobId = parseJobId(id);
+      if (jobId !== null) {
+        dispatch(fetchJobById(jobId));
+      } else {
+        console.error('Invalid job ID:', id);
+        navigate('/jobs', { replace: true });
+      }
     }
     
     return () => {
       dispatch(clearCurrentJob());
     };
-  }, [id, dispatch]);
+  }, [id, dispatch, navigate]);
 
   // Check if user has already applied for this job
   useEffect(() => {
@@ -90,16 +97,6 @@ const JobDetail: React.FC = () => {
   const handleApplicationCancel = () => {
     setShowApplicationForm(false);
   };
-
-  useEffect(() => {
-    if (id) {
-      dispatch(fetchJobById(Number(id)));
-    }
-    
-    return () => {
-      dispatch(clearCurrentJob());
-    };
-  }, [id, dispatch]);
 
   const formatSalary = (minSalary: number, maxSalary: number): string => {
     const formatNumber = (num: number): string => {

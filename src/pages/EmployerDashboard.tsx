@@ -12,6 +12,8 @@ import { useProfile } from '../features/profile/hooks/useProfile';
 import { PageLoader } from '../components/PageLoader';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Simple SVG icons as components
 const BriefcaseIcon = ({ className }: { className?: string }) => (
@@ -91,6 +93,7 @@ export default function EmployerDashboard() {
   const navigate = useNavigate();
   const { logout } = useContext(AuthContext);
   const { currentProfile, loading, fetchMyProfile } = useProfile();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<EmployerStats>({
     activeJobs: 0,
     totalApplications: 0,
@@ -102,7 +105,7 @@ export default function EmployerDashboard() {
 
   const handleLogout = useCallback(async () => {
     try {
-      toast.loading('Logging out...', { id: 'logout' });
+      toast.loading(t('dashboard.user.loggingOut'), { id: 'logout' });
       
       // Set a timeout to dismiss the loading toast if navigation takes too long
       const timeoutId = setTimeout(() => {
@@ -123,7 +126,7 @@ export default function EmployerDashboard() {
     } catch (error: any) {
       console.error('Logout error:', error);
       // Replace the loading toast with an error toast
-      toast.error('Logout failed. Please try again.', { id: 'logout' });
+      toast.error(t('dashboard.user.logoutFailed'), { id: 'logout' });
       
       // Redirect to auth page even if logout failed
       navigate('/auth');
@@ -260,20 +263,21 @@ export default function EmployerDashboard() {
           <div className="flex justify-between items-center py-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {companyName} Dashboard
+                {t('dashboard.employer.welcomeBack').replace('{name}', companyName)}
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
-                Manage your hiring and find the best talent
+                {t('dashboard.employer.readyToHire')}
               </p>
             </div>
             <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
               <ThemeToggle variant="compact" />
               <button 
                 onClick={() => navigate('/jobs/post')}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
               >
                 <PlusIcon className="w-4 h-4 mr-2" />
-                Post Job
+                {t('dashboard.actions.postJob')}
               </button>
               <button className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors">
                 <BellIcon className="w-6 h-6" />
@@ -314,7 +318,7 @@ export default function EmployerDashboard() {
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" 
                   />
                 </svg>
-                <span>Logout</span>
+                <span>{t('dashboard.user.logout')}</span>
               </motion.button>
               
               <div 
@@ -353,7 +357,7 @@ export default function EmployerDashboard() {
                 <BriefcaseIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Active Jobs</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.activeJobs')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeJobs}</p>
               </div>
             </div>
@@ -370,7 +374,7 @@ export default function EmployerDashboard() {
                 <UsersIcon className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Applications</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.totalApplications')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalApplications}</p>
               </div>
             </div>
@@ -387,7 +391,7 @@ export default function EmployerDashboard() {
                 <UserIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Candidates</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.candidates')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.candidates}</p>
               </div>
             </div>
@@ -404,7 +408,7 @@ export default function EmployerDashboard() {
                 <ChartIcon className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Hires</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{t('dashboard.stats.hires')}</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.hires}</p>
               </div>
             </div>
@@ -423,13 +427,13 @@ export default function EmployerDashboard() {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Your Job Postings
+                    {t('dashboard.employer.jobPostings')}
                   </h2>
                   <button 
                     onClick={() => navigate('/jobs/manage')}
                     className="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                   >
-                    Manage All
+                    {t('dashboard.actions.manageJobs')}
                   </button>
                 </div>
               </div>

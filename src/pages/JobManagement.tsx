@@ -102,25 +102,33 @@ const JobManagement: React.FC = () => {
                 Job Management
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Manage your job postings and track applications
+                {myJobs.length === 0 
+                  ? 'Empty - Ready to start hiring? Create your first job posting!'
+                  : 'Manage your job postings and track applications'
+                }
               </p>
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className={`font-medium py-2 px-4 rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                myJobs.length === 0
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105 focus:ring-blue-500'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500'
+              }`}
             >
-              ➕ Post New Job
+              {myJobs.length === 0 ? '🚀 Create New Jobs' : '➕ Post New Job'}
             </button>
           </div>
         </motion.div>
 
-        {/* Statistics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
-        >
+        {/* Statistics - Only show when there are jobs */}
+        {myJobs.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+          >
           <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6">
             <div className="flex items-center">
               <div className="text-3xl mr-3">📊</div>
@@ -161,6 +169,7 @@ const JobManagement: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
         {/* Job Form Modal */}
         {showForm && (
@@ -181,6 +190,7 @@ const JobManagement: React.FC = () => {
                 onSubmit={editingJob ? handleUpdateJob : handleCreateJob}
                 onCancel={handleCancelForm}
                 loading={loading}
+                isFirstJob={myJobs.length === 0 && !editingJob}
               />
             </motion.div>
           </motion.div>
@@ -283,21 +293,55 @@ const JobManagement: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12"
+            className="text-center py-16 px-4"
           >
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              No jobs posted yet
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Start by posting your first job to find great candidates
-            </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-            >
-              ➕ Post Your First Job
-            </button>
+            <div className="max-w-md mx-auto">
+              {/* Empty Status Badge */}
+              <div className="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full text-sm font-medium text-gray-600 dark:text-gray-400 mb-6">
+                📭 Empty
+              </div>
+              
+              <div className="text-8xl mb-6">🏢</div>
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Welcome to Job Management!
+              </h3>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                You haven't posted any jobs yet. Start building your team by posting your first job opening and connecting with talented candidates.
+              </p>
+              
+              {/* Benefits list */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <div className="text-3xl mb-2">👥</div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    Find Top Talent
+                  </p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <div className="text-3xl mb-2">📊</div>
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                    Track Applications
+                  </p>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                  <div className="text-3xl mb-2">⚡</div>
+                  <p className="text-sm font-medium text-purple-800 dark:text-purple-200">
+                    Quick Hiring
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                🎯 Post Your First Job
+              </button>
+              
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                It only takes a few minutes to get started
+              </p>
+            </div>
           </motion.div>
         )}
       </div>

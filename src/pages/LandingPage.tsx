@@ -140,6 +140,9 @@ const LandingPage: React.FC = () => {
               <a href="/jobs" className="text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 font-medium transition-colors duration-300">
                 <AnimatedText className="inline-block">{t('header.companies')}</AnimatedText>
               </a>
+              <a href="/bundles" className="text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 font-medium transition-colors duration-300">
+                <AnimatedText className="inline-block">{t('header.bundles')}</AnimatedText>
+              </a>
               <a href="#" className="text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 font-medium transition-colors duration-300">
                 <AnimatedText className="inline-block">{t('header.careerAdvice')}</AnimatedText>
               </a>

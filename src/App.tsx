@@ -15,6 +15,8 @@ const Register = lazy(() => import('./pages/Register'))
 const BeforeAuth = lazy(() => import('./pages/BeforeAuth'))
 const ChooseRole = lazy(() => import('./pages/ChooseRole'))
 const ProfileSuccess = lazy(() => import('./pages/ProfileSuccess'))
+const Bundles = lazy(() => import('./pages/Bundles'))
+const Payment = lazy(() => import('./pages/Payment'))
 
 // Lazy load dashboard components
 const UserDashboard = lazy(() => import('./pages/UserDashboard'))
@@ -45,6 +47,12 @@ function App() {
             <Routes>
             {/* Landing Page Route */}
             <Route path="/" element={<LandingPage />} />
+            
+            {/* Bundles Page Route */}
+            <Route path="/bundles" element={<Bundles />} />
+            
+            {/* Payment Route */}
+            <Route path="/payment/:bundleId" element={<Payment />} />
             
             {/* Smart redirect for authenticated users */}
             <Route path="/dashboard-redirect" element={<SmartRedirect />} />

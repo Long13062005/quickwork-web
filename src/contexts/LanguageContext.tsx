@@ -19,6 +19,7 @@ const translations = {
     // Header
     'header.findJobs': 'Tìm việc làm',
     'header.companies': 'Công ty',
+    'header.bundles': 'Gói dịch vụ',
     'header.careerAdvice': 'Tư vấn nghề nghiệp',
     'header.signIn': 'Đăng nhập',
     'header.signUp': 'Đăng ký',
@@ -180,6 +181,7 @@ const translations = {
     'dashboard.actions.editProfile': 'Chỉnh sửa hồ sơ',
     'dashboard.actions.viewApplications': 'Xem đơn ứng tuyển',
     'dashboard.actions.updateResume': 'Cập nhật CV',
+    'dashboard.actions.viewBundles': 'Xem gói dịch vụ',
     'dashboard.actions.postJob': 'Đăng tuyển dụng',
     'dashboard.actions.manageCandidates': 'Quản lý ứng viên',
     'dashboard.actions.viewAnalytics': 'Xem phân tích',
@@ -303,11 +305,72 @@ const translations = {
     
     // Auth Forms
     'auth.back': 'Quay lại',
+    
+    // Bundles Page
+    'bundles.title': 'Gói Dịch Vụ',
+    'bundles.subtitle': 'Chọn gói phù hợp với nhu cầu của bạn',
+    'bundles.hero.title': 'Chọn Gói Dịch Vụ Phù Hợp',
+    'bundles.hero.subtitle': 'Mở khóa tính năng cao cấp để tăng cơ hội tìm việc',
+    'bundles.monthly': 'Hàng tháng',
+    'bundles.yearly': 'Hàng năm',
+    'bundles.savePercent': 'Tiết kiệm 17%',
+    'bundles.popular': 'Phổ biến',
+    'bundles.premium': 'Cao cấp',
+    'bundles.perMonth': 'tháng',
+    'bundles.perYear': 'năm',
+    
+    // Bundle Plans
+    'bundles.free.name': 'Miễn Phí',
+    'bundles.free.description': 'Bắt đầu hành trình tìm việc của bạn',
+    'bundles.free.button': 'Bắt Đầu Miễn Phí',
+    'bundles.vip.name': 'VIP',
+    'bundles.vip.description': 'Dành cho người tìm việc nghiêm túc',
+    'bundles.vip.button': 'Nâng Cấp VIP',
+    'bundles.vipPlus.name': 'VIP+',
+    'bundles.vipPlus.description': 'Trải nghiệm tuyển dụng cao cấp',
+    'bundles.vipPlus.button': 'Chọn VIP+',
+    
+    // Bundle Features
+    'bundles.features.basicProfile': 'Hồ sơ cơ bản',
+    'bundles.features.jobSearch': 'Tìm kiếm việc làm',
+    'bundles.features.applications': 'Ứng tuyển việc làm',
+    'bundles.features.applicationsLimit': 'Giới hạn 5 ứng tuyển/tháng',
+    'bundles.features.unlimitedApplications': 'Ứng tuyển không giới hạn',
+    'bundles.features.messaging': 'Nhắn tin với nhà tuyển dụng',
+    'bundles.features.analytics': 'Phân tích hồ sơ',
+    'bundles.features.prioritySupport': 'Hỗ trợ ưu tiên',
+    'bundles.features.advancedSearch': 'Tìm kiếm nâng cao',
+    'bundles.features.profileBoost': 'Tăng cường hồ sơ',
+    'bundles.features.premiumBadge': 'Huy hiệu Premium',
+    
+    // Bundle FAQ
+    'bundles.faq.title': 'Cần Hỗ Trợ?',
+    'bundles.faq.subtitle': 'Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp bạn',
+    'bundles.faq.contactSupport': 'Liên Hệ Hỗ Trợ',
+    
+    // Buttons
+    'buttons.backToHome': 'Về Trang Chủ',
+    
+    // Payment Page
+    'payment.title': 'Thanh Toán',
+    'payment.subtitle': 'Hoàn tất đăng ký gói dịch vụ',
+    'payment.orderSummary': 'Tóm Tắt Đơn Hàng',
+    'payment.paymentDetails': 'Chi Tiết Thanh Toán',
+    'payment.subtotal': 'Tạm tính',
+    'payment.tax': 'Thuế',
+    'payment.total': 'Tổng cộng',
+    'payment.demo.title': 'Demo Thanh Toán',
+    'payment.demo.description': 'Đây là trang demo. Không có giao dịch thực tế nào được thực hiện.',
+    'payment.demo.secure': 'Bảo mật 100%',
+    'payment.processing': 'Đang xử lý...',
+    'payment.completePurchase': 'Hoàn Tất Mua Hàng',
+    'payment.securePayment': 'Thanh toán an toàn & bảo mật',
   },
   en: {
     // Header
     'header.findJobs': 'Find Jobs',
     'header.companies': 'Companies',
+    'header.bundles': 'Bundles',
     'header.careerAdvice': 'Career Advice',
     'header.signIn': 'Sign In',
     'header.signUp': 'Sign Up',
@@ -469,6 +532,7 @@ const translations = {
     'dashboard.actions.editProfile': 'Edit Profile',
     'dashboard.actions.viewApplications': 'View Applications',
     'dashboard.actions.updateResume': 'Update Resume',
+    'dashboard.actions.viewBundles': 'View Bundles',
     'dashboard.actions.postJob': 'Post Job',
     'dashboard.actions.manageCandidates': 'Manage Candidates',
     'dashboard.actions.viewAnalytics': 'View Analytics',
@@ -592,11 +656,72 @@ const translations = {
     
     // Auth Forms
     'auth.back': 'Back',
+    
+    // Bundles Page
+    'bundles.title': 'Subscription Plans',
+    'bundles.subtitle': 'Choose the plan that fits your needs',
+    'bundles.hero.title': 'Choose Your Perfect Plan',
+    'bundles.hero.subtitle': 'Unlock premium features to boost your job search success',
+    'bundles.monthly': 'Monthly',
+    'bundles.yearly': 'Yearly',
+    'bundles.savePercent': 'Save 17%',
+    'bundles.popular': 'Popular',
+    'bundles.premium': 'Premium',
+    'bundles.perMonth': 'month',
+    'bundles.perYear': 'year',
+    
+    // Bundle Plans
+    'bundles.free.name': 'Free',
+    'bundles.free.description': 'Start your job search journey',
+    'bundles.free.button': 'Get Started Free',
+    'bundles.vip.name': 'VIP',
+    'bundles.vip.description': 'For serious job seekers',
+    'bundles.vip.button': 'Upgrade to VIP',
+    'bundles.vipPlus.name': 'VIP+',
+    'bundles.vipPlus.description': 'Premium job search experience',
+    'bundles.vipPlus.button': 'Choose VIP+',
+    
+    // Bundle Features
+    'bundles.features.basicProfile': 'Basic profile',
+    'bundles.features.jobSearch': 'Job search',
+    'bundles.features.applications': 'Job applications',
+    'bundles.features.applicationsLimit': 'Limited to 5 applications/month',
+    'bundles.features.unlimitedApplications': 'Unlimited applications',
+    'bundles.features.messaging': 'Direct messaging with employers',
+    'bundles.features.analytics': 'Profile analytics',
+    'bundles.features.prioritySupport': 'Priority support',
+    'bundles.features.advancedSearch': 'Advanced search filters',
+    'bundles.features.profileBoost': 'Profile boost',
+    'bundles.features.premiumBadge': 'Premium badge',
+    
+    // Bundle FAQ
+    'bundles.faq.title': 'Need Help?',
+    'bundles.faq.subtitle': 'Our support team is here to help you',
+    'bundles.faq.contactSupport': 'Contact Support',
+    
+    // Buttons
+    'buttons.backToHome': 'Back to Home',
+    
+    // Payment Page
+    'payment.title': 'Payment',
+    'payment.subtitle': 'Complete your subscription',
+    'payment.orderSummary': 'Order Summary',
+    'payment.paymentDetails': 'Payment Details',
+    'payment.subtotal': 'Subtotal',
+    'payment.tax': 'Tax',
+    'payment.total': 'Total',
+    'payment.demo.title': 'Demo Payment',
+    'payment.demo.description': 'This is a demo page. No real transactions will be processed.',
+    'payment.demo.secure': '100% Secure',
+    'payment.processing': 'Processing...',
+    'payment.completePurchase': 'Complete Purchase',
+    'payment.securePayment': 'Secure & encrypted payment',
   },
   ja: {
     // Header
     'header.findJobs': '求人検索',
     'header.companies': '企業',
+    'header.bundles': 'プラン',
     'header.careerAdvice': 'キャリア相談',
     'header.signIn': 'ログイン',
     'header.signUp': '新規登録',
@@ -758,6 +883,7 @@ const translations = {
     'dashboard.actions.editProfile': 'プロフィール編集',
     'dashboard.actions.viewApplications': '応募を確認',
     'dashboard.actions.updateResume': '履歴書を更新',
+    'dashboard.actions.viewBundles': 'プランを表示',
     'dashboard.actions.postJob': '求人を投稿',
     'dashboard.actions.manageCandidates': '候補者を管理',
     'dashboard.actions.viewAnalytics': '分析を表示',
@@ -881,6 +1007,66 @@ const translations = {
     
     // Auth Forms
     'auth.back': '戻る',
+    
+    // Bundles Page
+    'bundles.title': 'サブスクリプション',
+    'bundles.subtitle': 'あなたのニーズに合ったプランを選択',
+    'bundles.hero.title': '完璧なプランを選択',
+    'bundles.hero.subtitle': 'プレミアム機能で求職成功率を向上',
+    'bundles.monthly': '月額',
+    'bundles.yearly': '年額',
+    'bundles.savePercent': '17%節約',
+    'bundles.popular': '人気',
+    'bundles.premium': 'プレミアム',
+    'bundles.perMonth': '月',
+    'bundles.perYear': '年',
+    
+    // Bundle Plans
+    'bundles.free.name': '無料',
+    'bundles.free.description': '求職活動を始めよう',
+    'bundles.free.button': '無料で始める',
+    'bundles.vip.name': 'VIP',
+    'bundles.vip.description': '本格的な求職者向け',
+    'bundles.vip.button': 'VIPにアップグレード',
+    'bundles.vipPlus.name': 'VIP+',
+    'bundles.vipPlus.description': 'プレミアム求職体験',
+    'bundles.vipPlus.button': 'VIP+を選択',
+    
+    // Bundle Features
+    'bundles.features.basicProfile': '基本プロフィール',
+    'bundles.features.jobSearch': '求人検索',
+    'bundles.features.applications': '求人応募',
+    'bundles.features.applicationsLimit': '月5件まで応募可能',
+    'bundles.features.unlimitedApplications': '無制限応募',
+    'bundles.features.messaging': '雇用主との直接メッセージ',
+    'bundles.features.analytics': 'プロフィール分析',
+    'bundles.features.prioritySupport': '優先サポート',
+    'bundles.features.advancedSearch': '高度な検索フィルター',
+    'bundles.features.profileBoost': 'プロフィールブースト',
+    'bundles.features.premiumBadge': 'プレミアムバッジ',
+    
+    // Bundle FAQ
+    'bundles.faq.title': 'サポートが必要ですか？',
+    'bundles.faq.subtitle': 'サポートチームがお手伝いします',
+    'bundles.faq.contactSupport': 'サポートに連絡',
+    
+    // Buttons
+    'buttons.backToHome': 'ホームに戻る',
+    
+    // Payment Page
+    'payment.title': 'お支払い',
+    'payment.subtitle': 'サブスクリプションを完了',
+    'payment.orderSummary': '注文概要',
+    'payment.paymentDetails': 'お支払い詳細',
+    'payment.subtotal': '小計',
+    'payment.tax': '税金',
+    'payment.total': '合計',
+    'payment.demo.title': 'デモ決済',
+    'payment.demo.description': 'これはデモページです。実際の取引は処理されません。',
+    'payment.demo.secure': '100%安全',
+    'payment.processing': '処理中...',
+    'payment.completePurchase': '購入を完了',
+    'payment.securePayment': '安全で暗号化された決済',
   }
 };
 

@@ -85,6 +85,12 @@ const CogIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const CrownIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 6L9.5 1L4 3.5L6.5 9L12 6ZM12 6L14.5 1L20 3.5L17.5 9L12 6ZM12 6V18L20 20H4L12 6Z" />
+  </svg>
+);
+
 interface JobRecommendation {
   id: string;
   title: string;
@@ -582,6 +588,14 @@ export default function UserDashboard() {
                   <DocumentIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
                   <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.updateResume')}</span>
                 </button>
+                
+                <NavLink 
+                  to="/bundles"
+                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                >
+                  <CrownIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-200">{t('dashboard.actions.viewBundles')}</span>
+                </NavLink>
                 
                 <NavLink 
                   to="/change-password"

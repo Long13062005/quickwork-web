@@ -28,7 +28,7 @@ interface JobApplicationState {
   loading: boolean;
   error: string | null;
   searchParams: JobApplicationSearchParams;
-  appliedJobs: Set<number>; // Track which jobs user has applied to
+  appliedJobs: number[]; // Track which jobs user has applied to - changed from Set to array
 }
 
 /**
@@ -46,7 +46,7 @@ const initialState: JobApplicationState = {
   loading: false,
   error: null,
   searchParams: {},
-  appliedJobs: new Set(),
+  appliedJobs: [],
 };
 
 /**
@@ -169,10 +169,12 @@ const jobApplicationSlice = createSlice({
       state.pageSize = action.payload;
     },
     addAppliedJob: (state, action: PayloadAction<number>) => {
-      state.appliedJobs.add(action.payload);
+      if (!state.appliedJobs.includes(action.payload)) {
+        state.appliedJobs.push(action.payload);
+      }
     },
     removeAppliedJob: (state, action: PayloadAction<number>) => {
-      state.appliedJobs.delete(action.payload);
+      state.appliedJobs = state.appliedJobs.filter(jobId => jobId !== action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -217,7 +219,10 @@ const jobApplicationSlice = createSlice({
       .addCase(applyForJob.fulfilled, (state, action) => {
         state.loading = false;
         state.myApplications.unshift(action.payload);
-        state.appliedJobs.add(action.payload.jobId);
+        const jobId = action.payload.jobId;
+        if (!state.appliedJobs.includes(jobId)) {
+          state.appliedJobs.push(jobId);
+        }
       })
       .addCase(applyForJob.rejected, (state, action) => {
         state.loading = false;
@@ -232,8 +237,8 @@ const jobApplicationSlice = createSlice({
       .addCase(fetchMyApplications.fulfilled, (state, action) => {
         state.loading = false;
         state.myApplications = action.payload;
-        // Update applied jobs set
-        state.appliedJobs = new Set(action.payload.map(app => app.job.id));
+        // Update applied jobs array
+        state.appliedJobs = action.payload.map(app => app.job.id);
       })
       .addCase(fetchMyApplications.rejected, (state, action) => {
         state.loading = false;
@@ -255,7 +260,7 @@ const jobApplicationSlice = createSlice({
         
         // Remove from applied jobs if found
         if (withdrawnApp) {
-          state.appliedJobs.delete(withdrawnApp.job.id);
+          state.appliedJobs = state.appliedJobs.filter(jobId => jobId !== withdrawnApp.job.id);
         }
         
         // Clear current application if it's the withdrawn one
@@ -304,9 +309,11 @@ const jobApplicationSlice = createSlice({
       .addCase(checkApplicationStatus.fulfilled, (state, action) => {
         const { jobId, hasApplied } = action.payload;
         if (hasApplied) {
-          state.appliedJobs.add(jobId);
+          if (!state.appliedJobs.includes(jobId)) {
+            state.appliedJobs.push(jobId);
+          }
         } else {
-          state.appliedJobs.delete(jobId);
+          state.appliedJobs = state.appliedJobs.filter(id => id !== jobId);
         }
       })
       

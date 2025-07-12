@@ -114,6 +114,9 @@ export interface JobSearchParams {
   minSalary?: number;
   maxSalary?: number;
   type?: JobType;
+  experienceLevel?: string;
+  postedWithin?: number;
+  remoteOption?: boolean;
   page?: number;
   size?: number;
 }

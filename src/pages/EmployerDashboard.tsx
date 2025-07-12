@@ -7,13 +7,16 @@
 import { useEffect, useState, useContext, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { useProfile } from '../features/profile/hooks/useProfile';
+import { fetchMyJobs } from '../features/job/jobSlice';
 import { PageLoader } from '../components/PageLoader';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useLanguage } from '../contexts/LanguageContext';
+import type { RootState, AppDispatch } from '../store';
 
 // Simple SVG icons as components
 const BriefcaseIcon = ({ className }: { className?: string }) => (
@@ -59,17 +62,6 @@ const UserIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-interface JobPosting {
-  id: string;
-  title: string;
-  department: string;
-  type: 'full_time' | 'part_time' | 'contract' | 'remote';
-  applications: number;
-  views: number;
-  posted: string;
-  status: 'active' | 'paused' | 'closed';
-}
-
 interface Candidate {
   id: string;
   name: string;
@@ -91,8 +83,10 @@ interface EmployerStats {
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { logout } = useContext(AuthContext);
   const { currentProfile, loading, fetchMyProfile } = useProfile();
+  const { myJobs } = useSelector((state: RootState) => state.job);
   const { t } = useLanguage();
   const [stats, setStats] = useState<EmployerStats>({
     activeJobs: 0,
@@ -100,7 +94,6 @@ export default function EmployerDashboard() {
     candidates: 0,
     hires: 0
   });
-  const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
   const [recentCandidates, setRecentCandidates] = useState<Candidate[]>([]);
 
   const handleLogout = useCallback(async () => {
@@ -150,50 +143,18 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     fetchMyProfile();
+    dispatch(fetchMyJobs());
     loadDashboardData();
-  }, [fetchMyProfile]);
+  }, [fetchMyProfile, dispatch]);
 
   const loadDashboardData = async () => {
-    // Mock data - replace with actual API calls
+    // Mock data for candidates - replace with actual API calls
     setStats({
-      activeJobs: 5,
-      totalApplications: 127,
-      candidates: 45,
-      hires: 3
+      activeJobs: myJobs.filter(job => job.status === 'OPEN').length,
+      totalApplications: 0, // This should come from application API
+      candidates: 0, // This should come from application API  
+      hires: 0 // This should come from application API
     });
-
-    setJobPostings([
-      {
-        id: '1',
-        title: 'Senior Frontend Developer',
-        department: 'Engineering',
-        type: 'full_time',
-        applications: 24,
-        views: 156,
-        posted: '5 days ago',
-        status: 'active'
-      },
-      {
-        id: '2',
-        title: 'UX Designer',
-        department: 'Design',
-        type: 'full_time',
-        applications: 18,
-        views: 89,
-        posted: '1 week ago',
-        status: 'active'
-      },
-      {
-        id: '3',
-        title: 'Product Manager',
-        department: 'Product',
-        type: 'full_time',
-        applications: 31,
-        views: 203,
-        posted: '2 weeks ago',
-        status: 'paused'
-      }
-    ]);
 
     setRecentCandidates([
       {
@@ -229,15 +190,42 @@ export default function EmployerDashboard() {
     ]);
   };
 
-  const getStatusColor = (status: JobPosting['status'] | Candidate['status']) => {
+  const getStatusColor = (status: Candidate['status']) => {
     switch (status) {
-      case 'active': case 'hired': return 'text-green-600 bg-green-50';
+      case 'hired': return 'text-green-600 bg-green-50';
       case 'interview': return 'text-blue-600 bg-blue-50';
-      case 'reviewing': case 'paused': return 'text-yellow-600 bg-yellow-50';
-      case 'closed': case 'rejected': return 'text-red-600 bg-red-50';
+      case 'reviewing': return 'text-yellow-600 bg-yellow-50';
+      case 'rejected': return 'text-red-600 bg-red-50';
       case 'new': return 'text-purple-600 bg-purple-50';
       default: return 'text-gray-600 bg-gray-50';
     }
+  };
+
+  const getJobStatusColor = (status: string) => {
+    switch (status) {
+      case 'OPEN': return 'text-green-600 bg-green-50';
+      case 'CLOSED': return 'text-red-600 bg-red-50';
+      case 'DRAFT': return 'text-gray-600 bg-gray-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const formatJobType = (type: string): string => {
+    return type.split('_').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
   };
 
   const getCompanyName = () => {
@@ -273,7 +261,7 @@ export default function EmployerDashboard() {
               <LanguageSwitcher />
               <ThemeToggle variant="compact" />
               <button 
-                onClick={() => navigate('/jobs/post')}
+                onClick={() => navigate('/jobs/manage')}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
               >
                 <PlusIcon className="w-4 h-4 mr-2" />
@@ -438,35 +426,58 @@ export default function EmployerDashboard() {
                 </div>
               </div>
               <div className="p-6 space-y-4">
-                {jobPostings.map((job) => (
-                  <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{job.title}</h3>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(job.status)}`}>
-                            {job.status}
-                          </span>
+                {myJobs.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-6xl mb-4">📋</div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      No job postings yet
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Start by posting your first job to attract talented candidates.
+                    </p>
+                    <button 
+                      onClick={() => navigate('/jobs/manage')}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Post Your First Job
+                    </button>
+                  </div>
+                ) : (
+                  myJobs.slice(0, 3).map((job) => (
+                    <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{job.title}</h3>
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${getJobStatusColor(job.status)}`}>
+                              {job.status}
+                            </span>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300">{job.location}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="capitalize">{formatJobType(job.type)}</span>
+                            <span>${job.minSalary.toLocaleString()} - ${job.maxSalary.toLocaleString()}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Posted {formatDate(job.postedDate)}</p>
                         </div>
-                        <p className="text-gray-600 dark:text-gray-300">{job.department}</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span className="capitalize">{job.type.replace('_', ' ')}</span>
-                          <span>{job.applications} applications</span>
-                          <span>{job.views} views</span>
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => navigate('/jobs/manage')}
+                            className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => navigate('/jobs/manage')}
+                            className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                          >
+                            View Applications
+                          </button>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Posted {job.posted}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">
-                          Edit
-                        </button>
-                        <button className="px-3 py-1 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
-                          View Applications
-                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </motion.div>
           </div>

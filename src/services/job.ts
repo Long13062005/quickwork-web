@@ -107,8 +107,25 @@ export class JobAPI {
    * Get jobs by current employer (requires EMPLOYER role)
    */
   static async getJobsByEmployer(): Promise<JobResponse[]> {
-    const response = await api.get<JobResponse[]>(JOB_ENDPOINTS.MY_JOBS);
-    return response.data;
+    try {
+      const response = await api.get<JobResponse[]>(JOB_ENDPOINTS.MY_JOBS);
+      return response.data;
+    } catch (error: any) {
+      // Handle 403 error when employer has no jobs yet - return empty array
+      if (error.response?.status === 403) {
+        console.log('No jobs found for employer (403) - returning empty array');
+        return [];
+      }
+      
+      // Handle 404 error when employer has no jobs yet - return empty array
+      if (error.response?.status === 404) {
+        console.log('No jobs found for employer (404) - returning empty array');
+        return [];
+      }
+      
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**

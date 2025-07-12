@@ -5,7 +5,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchMyJobs, createJob, updateJob, deleteJob } from '../features/job/jobSlice';
+import { useNavigate } from 'react-router-dom';
+import { fetchMyJobs, createJob, updateJob, deleteJob, clearError } from '../features/job/jobSlice';
 import JobForm from '../features/job/components/JobForm';
 import JobCard from '../features/job/components/JobCard';
 import JobApplicationsManager from '../features/application/components/JobApplicationsManager';
@@ -14,6 +15,7 @@ import type { JobRequest, JobResponse } from '../types/job.types';
 
 const JobManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { myJobs, loading, error } = useSelector((state: RootState) => state.job);
   const [showForm, setShowForm] = useState(false);
   const [editingJob, setEditingJob] = useState<JobResponse | null>(null);
@@ -21,6 +23,8 @@ const JobManagement: React.FC = () => {
   const [selectedJobForApplications, setSelectedJobForApplications] = useState<JobResponse | null>(null);
 
   useEffect(() => {
+    // Clear any existing errors when component mounts
+    dispatch(clearError());
     dispatch(fetchMyJobs());
   }, [dispatch]);
 
@@ -96,6 +100,24 @@ const JobManagement: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
+          {/* Back to Dashboard Button */}
+          <motion.button
+            onClick={() => navigate('/employer/dashboard')}
+            whileHover={{ scale: 1.05, x: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className="group flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-all duration-300 font-medium mb-4"
+          >
+            <motion.svg 
+              className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </motion.svg>
+            Back to Dashboard
+          </motion.button>
+          
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">

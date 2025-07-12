@@ -176,6 +176,18 @@ export const fetchMyJobs = createAsyncThunk(
       const response = await jobAPI.getJobsByEmployer();
       return response;
     } catch (error: any) {
+      // Handle 403 error when employer has no jobs yet - return empty array
+      if (error.response?.status === 403) {
+        console.log('No jobs found for employer (403) - returning empty array');
+        return [];
+      }
+      
+      // Handle other 4xx errors that might indicate no jobs
+      if (error.response?.status === 404) {
+        console.log('No jobs found for employer (404) - returning empty array');
+        return [];
+      }
+      
       // Handle backend error response format
       if (error.response?.data?.error) {
         return rejectWithValue(error.response.data.error);

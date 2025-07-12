@@ -78,6 +78,7 @@ const LandingPage: React.FC = () => {
     if (searchKeyword) searchParams.append('keyword', searchKeyword);
     if (searchLocation) searchParams.append('location', searchLocation);
     navigate(`/jobs?${searchParams.toString()}`);
+    // Keep the search text in the inputs - don't clear them
   };
 
   const handleGetStarted = () => {
@@ -274,7 +275,10 @@ const LandingPage: React.FC = () => {
                       whileTap={{ scale: 0.95 }}
                       onClick={() => {
                         setSearchKeyword(search);
-                        navigate(`/jobs?keyword=${encodeURIComponent(search)}`);
+                        // Navigate after setting the keyword so it stays in the input
+                        setTimeout(() => {
+                          navigate(`/jobs?keyword=${encodeURIComponent(search)}`);
+                        }, 0);
                       }}
                       className="bg-white/80 dark:bg-slate-700/80 backdrop-blur-sm hover:bg-gradient-to-r hover:from-rose-50 hover:to-pink-50 dark:hover:from-slate-600 dark:hover:to-slate-500 text-slate-700 dark:text-slate-300 px-5 py-2 rounded-full border border-rose-200 dark:border-slate-600 text-sm font-medium transition-all duration-300 shadow-sm hover:shadow-md"
                     >

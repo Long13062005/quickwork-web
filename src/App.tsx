@@ -32,6 +32,7 @@ const AdminProfile = lazy(() => import('./features/profile/components/AdminProfi
 // Lazy load job components
 const JobListing = lazy(() => import('./pages/JobListing'))
 const JobDetail = lazy(() => import('./pages/JobDetail'))
+const JobFavorites = lazy(() => import('./pages/JobFavorites'))
 const JobManagement = lazy(() => import('./pages/JobManagement'))
 
 // Lazy load application components
@@ -102,6 +103,11 @@ function App() {
             {/* Job routes */}
             <Route path="/jobs" element={<JobListing />} />
             <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/jobs/favorites" element={
+              <ProtectedRoute requireAuth={true} requireProfile={true}>
+                <JobFavorites />
+              </ProtectedRoute>
+            } />
             <Route path="/jobs/manage" element={
               <ProtectedRoute requireAuth={true} requireProfile={true}>
                 <JobManagement />

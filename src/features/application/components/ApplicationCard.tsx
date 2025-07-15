@@ -4,13 +4,13 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { JobApplicationResponse } from '../../../types/application.types';
+import type { ApplicationEntity } from '../../../types/application.types';
 import { canWithdrawApplication, APPLICATION_STATUS_OPTIONS } from '../../../types/application.types';
 
 interface ApplicationCardProps {
-  application: JobApplicationResponse;
+  application: ApplicationEntity;
   onWithdraw?: (id: number) => void;
-  onView?: (application: JobApplicationResponse) => void;
+  onView?: (application: ApplicationEntity) => void;
   className?: string;
   showJobInfo?: boolean;
   showApplicantInfo?: boolean;
@@ -92,24 +92,24 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
         <div className="flex-1">
           {showJobInfo && (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              {application.job.title}
+              {application.jobTitle}
             </h3>
           )}
           {showApplicantInfo && (
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              {application.applicant.fullName}
+              {application.userEmail}
             </h3>
           )}
           
-          {showJobInfo && application.job.companyName && (
+          {showJobInfo && application.employerEmail && (
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {application.job.companyName}
+              Employer: {application.employerEmail}
             </p>
           )}
           
           {showApplicantInfo && (
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {application.applicant.email}
+              {application.userEmail}
             </p>
           )}
         </div>
@@ -126,15 +126,15 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
         <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
           <div className="flex items-center">
             <span className="mr-1">📍</span>
-            <span>{application.job.location}</span>
+            <span>{application.jobLocation}</span>
           </div>
           <div className="flex items-center">
             <span className="mr-1">💰</span>
-            <span>{formatSalary(application.job.minSalary, application.job.maxSalary)}</span>
+            <span>{formatSalary(application.minSalary, application.maxSalary)}</span>
           </div>
           <div className="flex items-center">
             <span className="mr-1">⏰</span>
-            <span>{application.job.type.replace('_', ' ')}</span>
+            <span>{application.jobType.replace('_', ' ')}</span>
           </div>
         </div>
       )}
@@ -146,38 +146,38 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
             <span className="mr-1">📅</span>
             <span>Applied: {formatDate(application.appliedDate)}</span>
           </div>
-          {application.lastUpdated !== application.appliedDate && (
-            <div className="flex items-center">
-              <span className="mr-1">🔄</span>
-              <span>Updated: {formatDate(application.lastUpdated)}</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Cover Letter Preview */}
-      {application.coverLetter && (
+      {/* Job Description Preview */}
+      {showJobInfo && application.jobDescription && (
         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cover Letter Preview:</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Job Description:</p>
           <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-            {application.coverLetter}
+            {application.jobDescription}
           </p>
         </div>
       )}
 
-      {/* Resume Link */}
-      {application.resumeUrl && (
-        <div className="mt-2">
-          <a
-            href={application.resumeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm flex items-center"
-          >
-            <span className="mr-1">📄</span>
-            View Resume
-          </a>
+      {/* Required Skills */}
+      {showJobInfo && application.requiredSkills && application.requiredSkills.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Required Skills:</p>
+          <div className="flex flex-wrap gap-1">
+            {application.requiredSkills.slice(0, 5).map((skill, index) => (
+              <span 
+                key={index}
+                className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-2 py-1 rounded text-xs"
+              >
+                {skill}
+              </span>
+            ))}
+            {application.requiredSkills.length > 5 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                +{application.requiredSkills.length - 5} more
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -190,16 +190,6 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
           >
             🚫 Withdraw Application
           </button>
-        </div>
-      )}
-
-      {/* Notes (for employers) */}
-      {application.notes && showApplicantInfo && (
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Notes:</p>
-          <p className="text-sm text-gray-700 dark:text-gray-300">
-            {application.notes}
-          </p>
         </div>
       )}
     </motion.div>

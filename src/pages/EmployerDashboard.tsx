@@ -280,7 +280,7 @@ export default function EmployerDashboard() {
               {/* Profile info loaded from profile API */}
               <span className="text-sm text-gray-600 dark:text-gray-300">
                 {currentProfile ? 
-                  `${currentProfile.firstName} ${currentProfile.lastName} | Employer` : 
+                  `Employer` : 
                   'Loading profile...'
                 }
               </span>

@@ -5,7 +5,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { 
-  JobApplicationResponse, 
+  ApplicationEntity,
   JobApplicationRequest, 
   JobApplicationSearchParams,
   JobApplicationStatistics,
@@ -17,9 +17,9 @@ import { jobApplicationAPI } from '../../services/application';
  * Job Application state interface
  */
 interface JobApplicationState {
-  applications: JobApplicationResponse[];
-  currentApplication: JobApplicationResponse | null;
-  myApplications: JobApplicationResponse[];
+  applications: ApplicationEntity[];
+  currentApplication: ApplicationEntity | null;
+  myApplications: ApplicationEntity[];
   statistics: JobApplicationStatistics | null;
   totalPages: number;
   totalElements: number;
@@ -80,6 +80,21 @@ export const applyForJob = createAsyncThunk(
   }
 );
 
+/**
+ * Apply to job with CV upload (new API)
+ */
+export const applyToJobWithCV = createAsyncThunk(
+  'jobApplication/applyToJobWithCV',
+  async ({ jobId, data }: { jobId: number; data: { coverLetter?: string; cvFile?: File } }, { rejectWithValue }) => {
+    try {
+      const response = await jobApplicationAPI.applyToJob(jobId, data);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to apply to job');
+    }
+  }
+);
+
 // Get my applications
 export const fetchMyApplications = createAsyncThunk(
   'jobApplication/fetchMyApplications',
@@ -129,17 +144,48 @@ export const checkApplicationStatus = createAsyncThunk(
 export const fetchJobApplications = createAsyncThunk(
   'jobApplication/fetchJobApplications',
   async ({ jobId, page = 0, size = 10 }: { jobId: number; page?: number; size?: number }) => {
-    const response = await jobApplicationAPI.getJobApplications(jobId, page, size);
-    return response;
+    const response = await jobApplicationAPI.getApplicationsByJob(jobId);
+    return {
+      content: response,
+      totalPages: 1,
+      totalElements: response.length,
+      size,
+      number: page,
+      numberOfElements: response.length,
+      first: page === 0,
+      last: true,
+      empty: response.length === 0
+    };
   }
 );
 
-// Update application status (employer)
-export const updateApplicationStatus = createAsyncThunk(
-  'jobApplication/updateApplicationStatus',
-  async ({ id, status, notes }: { id: number; status: ApplicationStatus; notes?: string }) => {
-    const response = await jobApplicationAPI.updateApplicationStatus(id, status, notes);
-    return response;
+/**
+ * Get applications by job ID (for employers)
+ */
+export const fetchApplicationsByJobId = createAsyncThunk(
+  'jobApplication/fetchApplicationsByJobId',
+  async (jobId: number, { rejectWithValue }) => {
+    try {
+      const response = await jobApplicationAPI.getApplicationsByJob(jobId);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch job applications');
+    }
+  }
+);
+
+/**
+ * Update application status (for employers)
+ */
+export const updateJobApplicationStatus = createAsyncThunk(
+  'jobApplication/updateStatus',
+  async ({ applicationId, status }: { applicationId: number; status: ApplicationStatus }, { rejectWithValue }) => {
+    try {
+      const response = await jobApplicationAPI.updateApplicationStatus(applicationId, status);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update application status');
+    }
   }
 );
 
@@ -229,6 +275,26 @@ const jobApplicationSlice = createSlice({
         state.error = action.error.message || 'Failed to apply for job';
       })
       
+      // Apply to job with CV upload
+      .addCase(applyToJobWithCV.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(applyToJobWithCV.fulfilled, (state, action) => {
+        state.loading = false;
+        // ApplicationEntity is returned directly from backend
+        const application = action.payload;
+        state.myApplications.unshift(application);
+        const jobId = application.jobId;
+        if (!state.appliedJobs.includes(jobId)) {
+          state.appliedJobs.push(jobId);
+        }
+      })
+      .addCase(applyToJobWithCV.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to apply to job';
+      })
+      
       // Fetch my applications
       .addCase(fetchMyApplications.pending, (state) => {
         state.loading = true;
@@ -238,7 +304,7 @@ const jobApplicationSlice = createSlice({
         state.loading = false;
         state.myApplications = action.payload;
         // Update applied jobs array
-        state.appliedJobs = action.payload.map(app => app.job.id);
+        state.appliedJobs = action.payload.map(app => app.jobId);
       })
       .addCase(fetchMyApplications.rejected, (state, action) => {
         state.loading = false;
@@ -260,7 +326,7 @@ const jobApplicationSlice = createSlice({
         
         // Remove from applied jobs if found
         if (withdrawnApp) {
-          state.appliedJobs = state.appliedJobs.filter(jobId => jobId !== withdrawnApp.job.id);
+          state.appliedJobs = state.appliedJobs.filter(jobId => jobId !== withdrawnApp.jobId);
         }
         
         // Clear current application if it's the withdrawn one
@@ -324,7 +390,31 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(fetchJobApplications.fulfilled, (state, action) => {
         state.loading = false;
-        state.applications = action.payload.content;
+        // Convert ApplicationEntity[] to JobApplicationResponse[]
+        state.applications = action.payload.content.map((app: any) => ({
+          id: app.id,
+          job: {
+            id: app.jobId || app.job?.id || 0,
+            title: app.job?.title || 'Unknown Job',
+            companyName: app.job?.company || 'Unknown Company',
+            location: app.job?.location || 'Unknown Location',
+            type: app.job?.type || 'Unknown Type',
+            minSalary: app.job?.minSalary || 0,
+            maxSalary: app.job?.maxSalary || 0,
+          },
+          applicant: {
+            id: app.userId || app.user?.id || 0,
+            email: app.user?.email || 'unknown@example.com',
+            fullName: app.user ? 
+              `${app.user.firstName} ${app.user.lastName}` : 
+              'Unknown User',
+          },
+          appliedDate: app.appliedAt || new Date().toISOString(),
+          status: app.status,
+          coverLetter: app.coverLetter,
+          resumeUrl: app.cvFileUrl,
+          lastUpdated: app.appliedAt || new Date().toISOString(),
+        }));
         state.totalPages = action.payload.totalPages;
         state.totalElements = action.payload.totalElements;
         state.currentPage = action.payload.number;
@@ -336,26 +426,52 @@ const jobApplicationSlice = createSlice({
       })
       
       // Update application status (employer)
-      .addCase(updateApplicationStatus.pending, (state) => {
+      .addCase(updateJobApplicationStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateApplicationStatus.fulfilled, (state, action) => {
+      .addCase(updateJobApplicationStatus.fulfilled, (state, action) => {
         state.loading = false;
         const updatedApplication = action.payload;
+        
+        // Convert ApplicationEntity to JobApplicationResponse format
+        const jobApplicationResponse: JobApplicationResponse = {
+          id: updatedApplication.id,
+          job: {
+            id: updatedApplication.jobId,
+            title: updatedApplication.job?.title || 'Unknown Job',
+            companyName: updatedApplication.job?.company || 'Unknown Company',
+            location: updatedApplication.job?.location || 'Unknown Location',
+            type: updatedApplication.job?.type || 'Unknown Type',
+            minSalary: updatedApplication.job?.minSalary || 0,
+            maxSalary: updatedApplication.job?.maxSalary || 0,
+          },
+          applicant: {
+            id: updatedApplication.userId,
+            email: updatedApplication.user?.email || 'unknown@example.com',
+            fullName: updatedApplication.user ? 
+              `${updatedApplication.user.firstName} ${updatedApplication.user.lastName}` : 
+              'Unknown User',
+          },
+          appliedDate: updatedApplication.appliedAt,
+          status: updatedApplication.status,
+          coverLetter: updatedApplication.coverLetter,
+          resumeUrl: updatedApplication.cvFileUrl,
+          lastUpdated: updatedApplication.appliedAt,
+        };
         
         // Update in applications array
         const appIndex = state.applications.findIndex(app => app.id === updatedApplication.id);
         if (appIndex !== -1) {
-          state.applications[appIndex] = updatedApplication;
+          state.applications[appIndex] = jobApplicationResponse;
         }
         
         // Update current application if it's the same
         if (state.currentApplication?.id === updatedApplication.id) {
-          state.currentApplication = updatedApplication;
+          state.currentApplication = jobApplicationResponse;
         }
       })
-      .addCase(updateApplicationStatus.rejected, (state, action) => {
+      .addCase(updateJobApplicationStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to update application status';
       });

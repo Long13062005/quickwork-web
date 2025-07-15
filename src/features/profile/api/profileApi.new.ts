@@ -23,17 +23,9 @@ class ProfileApi {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Include HTTPOnly cookies for authentication
       ...options,
     };
-
-    // Add auth token if available
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        'Authorization': `Bearer ${token}`,
-      };
-    }
 
     try {
       const response = await fetch(url, config);

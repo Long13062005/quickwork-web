@@ -20,6 +20,65 @@ export const ApplicationStatus = {
 export type ApplicationStatus = typeof ApplicationStatus[keyof typeof ApplicationStatus];
 
 /**
+ * Application entity matching backend ApplicationDTO
+ */
+export interface ApplicationEntity {
+  id: number;
+  status: ApplicationStatus;
+  appliedDate: string; // LocalDateTime from backend
+
+  // User information
+  userId: number;
+  userEmail: string;
+
+  // Job information
+  jobId: number;
+  jobTitle: string;
+  jobDescription: string;
+  jobLocation: string;
+  minSalary: number; // BigDecimal from backend
+  maxSalary: number; // BigDecimal from backend
+  jobType: string;
+  jobPostedDate: string; // LocalDateTime from backend
+  requiredSkills: string[];
+  requiredExperience: number;
+  applicationDeadline: string; // LocalDateTime from backend
+
+  // Employer information
+  employerId: number;
+  employerEmail: string;
+}
+
+/**
+ * Legacy application entity structure (for backward compatibility)
+ * @deprecated Use ApplicationEntity instead
+ */
+export interface LegacyApplicationEntity {
+  id: number;
+  jobId: number;
+  userId: number;
+  status: ApplicationStatus;
+  appliedAt: string;
+  coverLetter?: string;
+  cvFileUrl?: string;
+  job?: {
+    id: number;
+    title: string;
+    company?: string;
+    location: string;
+    type: string;
+    minSalary?: number;
+    maxSalary?: number;
+  };
+  user?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+/**
  * Job application entity structure (from backend)
  */
 export interface JobApplicationEntity {

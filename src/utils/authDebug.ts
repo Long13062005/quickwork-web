@@ -3,15 +3,13 @@
  */
 
 export const debugAuthState = () => {
-  const authToken = localStorage.getItem('authToken');
   const cookies = document.cookie;
   const isSecure = window.location.protocol === 'https:';
   
   const authState = {
-    hasToken: !!authToken,
-    tokenValue: authToken ? `${authToken.substring(0, 10)}...` : null,
-    hasCookies: cookies.length > 0,
-    cookies: cookies,
+    hasVisibleCookies: cookies.length > 0,
+    visibleCookies: cookies,
+    httpOnlyCookieNote: 'HTTPOnly authentication cookies are not visible to JavaScript (this is secure)',
     isSecure,
     domain: window.location.hostname,
     origin: window.location.origin,
@@ -20,8 +18,8 @@ export const debugAuthState = () => {
   
   console.group('🔍 Authentication Debug Info');
   console.log('Auth State:', authState);
-  console.log('Full Token:', authToken);
-  console.log('All Cookies:', document.cookie);
+  console.log('HTTPOnly Cookie Info:', 'Authentication cookies are HTTPOnly and not visible in JavaScript');
+  console.log('All Visible Cookies:', document.cookie);
   console.groupEnd();
   
   return authState;

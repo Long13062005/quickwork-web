@@ -5,12 +5,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { fetchMyApplications, withdrawApplication, fetchApplicationStatistics } from '../features/application/applicationSlice';
 import ApplicationCard from '../features/application/components/ApplicationCard';
 import type { RootState, AppDispatch } from '../store';
 
 const MyApplications: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const { myApplications, statistics, loading, error } = useSelector((state: RootState) => state.application);
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -232,7 +234,7 @@ const MyApplications: React.FC = () => {
             </p>
             {filterStatus === 'all' && (
               <button
-                onClick={() => window.location.href = '/jobs'}
+                onClick={() => navigate('/jobs')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
                 🔍 Browse Jobs

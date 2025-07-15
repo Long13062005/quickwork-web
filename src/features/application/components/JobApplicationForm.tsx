@@ -1,18 +1,24 @@
 /**
- * Job application form component
+ * Job application form component with CV upload
  */
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
-import type { JobApplicationFormValues, JobApplicationRequest } from '../../../types/application.types';
+import toast from 'react-hot-toast';
+import { applyToJobWithCV } from '../applicationSlice';
+import { useLanguage } from '../../../contexts/LanguageContext';
+import type { AppDispatch } from '../../../store';
+import type { JobApplicationRequest } from '../../../types/application.types';
 import type { JobResponse } from '../../../types/job.types';
 
 interface JobApplicationFormProps {
   job: JobResponse;
-  onSubmit: (values: JobApplicationRequest) => void;
+  onSubmit?: (values: JobApplicationRequest) => void;
   onCancel: () => void;
+  onSuccess?: () => void;
   loading?: boolean;
   className?: string;
 }
@@ -20,69 +26,99 @@ interface JobApplicationFormProps {
 const applicationValidationSchema = Yup.object({
   coverLetter: Yup.string()
     .min(50, 'Cover letter must be at least 50 characters')
-    .max(2000, 'Cover letter must be less than 2000 characters')
-    .required('Cover letter is required'),
+    .max(2000, 'Cover letter must be less than 2000 characters'),
+  cvFile: Yup.mixed().required('CV file is required')
 });
 
 const JobApplicationForm: React.FC<JobApplicationFormProps> = ({ 
   job, 
   onSubmit, 
   onCancel, 
+  onSuccess,
   loading = false, 
   className = '' 
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { t } = useLanguage();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  const initialValues: JobApplicationFormValues = {
+  const initialValues = {
     coverLetter: '',
     resumeUrl: '',
+    cvFile: null
   };
 
-  const handleSubmit = (values: JobApplicationFormValues) => {
-    const applicationData: JobApplicationRequest = {
-      jobId: job.id,
-      coverLetter: values.coverLetter,
-      resumeUrl: values.resumeUrl || undefined,
-    };
-    onSubmit(applicationData);
+  const handleFormSubmit = async (values: any) => {
+    try {
+      if (onSubmit) {
+        // Use legacy onSubmit if provided
+        const applicationData: JobApplicationRequest = {
+          jobId: job.id,
+          coverLetter: values.coverLetter,
+          resumeUrl: values.resumeUrl || undefined,
+        };
+        onSubmit(applicationData);
+      } else {
+        // Use new CV upload API
+        await dispatch(applyToJobWithCV({
+          jobId: job.id,
+          data: {
+            coverLetter: values.coverLetter,
+            cvFile: values.cvFile
+          }
+        })).unwrap();
+        
+        toast.success(t('applications.applySuccess') || 'Application submitted successfully!');
+        if (onSuccess) onSuccess();
+      }
+    } catch (error) {
+      toast.error(t('applications.applyError') || 'Failed to submit application');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, setFieldValue: any) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type === 'application/pdf' || file.type.includes('document') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+        setFieldValue('cvFile', file);
+        setResumeFile(file);
+      } else {
+        toast.error(t('applications.invalidFileType') || 'Please select a valid file type (PDF, DOC, DOCX)');
+      }
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please upload a PDF or Word document');
-        return;
-      }
-      
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
-        return;
-      }
-      
       setResumeFile(file);
-      // TODO: Upload file to storage and get URL
-      // For now, we'll just use the file name
     }
   };
 
-  const formatSalary = (minSalary: number, maxSalary: number): string => {
-    const formatNumber = (num: number): string => {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(num);
-    };
-    
-    if (minSalary === maxSalary) {
-      return formatNumber(minSalary);
+  const formatSalary = (min?: number, max?: number) => {
+    if (min && max) {
+      return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+    } else if (min) {
+      return `From $${min.toLocaleString()}`;
+    } else if (max) {
+      return `Up to $${max.toLocaleString()}`;
     }
-    return `${formatNumber(minSalary)} - ${formatNumber(maxSalary)}`;
+    return 'Salary not specified';
   };
 
   return (
@@ -133,9 +169,9 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
       <Formik
         initialValues={initialValues}
         validationSchema={applicationValidationSchema}
-        onSubmit={handleSubmit}
+        onSubmit={handleFormSubmit}
       >
-        {({ isSubmitting, values }) => (
+        {({ isSubmitting, values, setFieldValue }) => (
           <Form className="space-y-6">
             {/* Cover Letter */}
             <div>
@@ -219,6 +255,68 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-zinc-700 dark:text-white"
               />
               <ErrorMessage name="resumeUrl" component="div" className="text-red-500 text-sm mt-1" />
+            </div>
+
+            {/* CV Upload (new) */}
+            <div>
+              <label htmlFor="cvFile" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Upload your CV *
+              </label>
+              <div
+                className={`border-2 ${dragOver ? 'border-blue-500' : 'border-gray-300'} dark:border-zinc-600 rounded-lg p-6 transition-all`}
+                onDragOver={(e) => { e.preventDefault(); handleDragOver(e); }}
+                onDragLeave={(e) => { e.preventDefault(); handleDragLeave(e); }}
+                onDrop={(e) => { handleDrop(e, setFieldValue); }}
+              >
+                <div className="text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <div className="mt-4">
+                    <Field
+                      id="cvFile"
+                      name="cvFile"
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = event.currentTarget.files?.[0];
+                        if (file) {
+                          setFieldValue('cvFile', file);
+                          setResumeFile(file);
+                        }
+                      }}
+                      className="sr-only"
+                    />
+                    <label htmlFor="cvFile" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-gray-900 dark:text-white">
+                        {resumeFile ? resumeFile.name : 'Drag and drop your CV here or click to upload'}
+                      </span>
+                    </label>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      PDF, DOC, DOCX up to 5MB
+                    </p>
+                  </div>
+                </div>
+                {resumeFile && (
+                  <div className="mt-4 flex items-center justify-between bg-gray-100 dark:bg-zinc-600 rounded-md p-3">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                        <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{resumeFile.name}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setResumeFile(null)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+              <ErrorMessage name="cvFile" component="div" className="text-red-500 text-sm mt-1" />
             </div>
 
             {/* Action Buttons */}

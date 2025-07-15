@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchJobApplications, updateApplicationStatus } from '../applicationSlice';
+import { fetchJobApplications, updateJobApplicationStatus } from '../applicationSlice';
 import EmployerApplicationCard from './EmployerApplicationCard';
 import type { RootState, AppDispatch } from '../../../store';
 import type { JobResponse } from '../../../types/job.types';
@@ -37,9 +37,9 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
   }, [dispatch, job.id, currentPage]);
 
   // Handle status update
-  const handleStatusUpdate = async (id: number, status: ApplicationStatus, notes?: string) => {
+  const handleStatusUpdate = async (id: number, status: ApplicationStatus) => {
     try {
-      await dispatch(updateApplicationStatus({ id, status, notes })).unwrap();
+      await dispatch(updateJobApplicationStatus({ applicationId: id, status })).unwrap();
       // Refresh applications after successful update
       dispatch(fetchJobApplications({ jobId: job.id, page: currentPage, size: pageSize }));
     } catch (error) {

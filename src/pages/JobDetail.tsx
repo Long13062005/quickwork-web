@@ -9,6 +9,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchJobById, clearCurrentJob } from '../features/job/jobSlice';
 import { applyForJob, checkApplicationStatus } from '../features/application/applicationSlice';
 import { useProfile } from '../features/profile/hooks/useProfile';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { parseJobId } from '../services/job';
 import JobApplicationForm from '../features/application/components/JobApplicationForm';
 import type { RootState, AppDispatch } from '../store';
@@ -19,6 +21,7 @@ const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { currentJob, loading, error } = useSelector((state: RootState) => state.job);
   const { loading: appLoading } = useSelector((state: RootState) => state.application);
   const { currentProfile } = useProfile();
@@ -64,17 +67,45 @@ const JobDetail: React.FC = () => {
 
   const handleApplyClick = () => {
     if (!currentProfile) {
-      toast.error('Please complete your profile before applying');
+      toast.error(t('jobDetail.errors.completeProfile'));
       navigate('/profile/jobseeker');
       return;
     }
     
     if (currentProfile.role !== 'jobseeker') {
-      toast.error('Only job seekers can apply for jobs');
+      toast.error(t('jobDetail.errors.onlyJobSeekers'));
       return;
     }
     
-    setShowApplicationForm(true);
+    handleSimpleApply();
+  };
+
+  // Simple apply function for the new API endpoint
+  const handleSimpleApply = async () => {
+    if (!currentJob) return;
+    
+    try {
+      // Call the simple API endpoint with HTTPOnly cookies for authentication
+      const response = await fetch(`/api/applications/apply/${currentJob.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include' // Include HTTPOnly cookies
+      });
+
+      if (response.ok) {
+        await response.json(); // Parse response but don't need to use the result
+        toast.success(t('jobDetail.success.applicationSubmitted'));
+        setHasApplied(true);
+      } else {
+        const errorData = await response.text();
+        toast.error(errorData || t('jobDetail.errors.applicationFailed'));
+      }
+    } catch (error) {
+      console.error('Failed to submit application:', error);
+      toast.error(t('jobDetail.errors.applicationFailed'));
+    }
   };
 
   const handleApplicationSubmit = async (applicationData: JobApplicationRequest) => {
@@ -134,7 +165,7 @@ const JobDetail: React.FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading job details...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('jobDetail.loading')}</p>
           </div>
         </div>
       </div>
@@ -152,14 +183,14 @@ const JobDetail: React.FC = () => {
           >
             <div className="text-6xl mb-4">❌</div>
             <h3 className="text-2xl font-semibold text-red-700 dark:text-red-300 mb-2">
-              Job Not Found
+              {t('jobDetail.errors.jobNotFound')}
             </h3>
             <p className="text-red-600 dark:text-red-400 mb-6">{error}</p>
             <button
               onClick={() => navigate('/jobs')}
               className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
             >
-              Back to Jobs
+              {t('jobDetail.navigation.backToJobs')}
             </button>
           </motion.div>
         </div>
@@ -198,20 +229,23 @@ const JobDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
+        {/* Header with Back Button and Language Switcher */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
           className="mb-6"
         >
-          <button
-            onClick={() => navigate('/jobs')}
-            className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-          >
-            <span className="mr-2">←</span>
-            Back to Jobs
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate('/jobs')}
+              className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+            >
+              <span className="mr-2">←</span>
+              {t('jobDetail.navigation.backToJobs')}
+            </button>
+            <LanguageSwitcher />
+          </div>
         </motion.div>
 
         {/* Job Header */}
@@ -287,10 +321,10 @@ const JobDetail: React.FC = () => {
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {hasApplied ? (
                     <span className="flex items-center text-green-600 dark:text-green-400">
-                      ✅ You have already applied for this position
+                      ✅ {t('jobDetail.status.alreadyApplied')}
                     </span>
                   ) : (
-                    <span>Ready to apply? Submit your application below.</span>
+                    <span>{t('jobDetail.apply.readyMessage')}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -309,7 +343,7 @@ const JobDetail: React.FC = () => {
                       disabled={appLoading}
                       className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
-                      {appLoading ? '⏳ Applying...' : '📄 Apply Now'}
+                      {appLoading ? `⏳ ${t('jobDetail.apply.applying')}` : `📄 ${t('jobDetail.apply.button')}`}
                     </button>
                   )}
                 </div>
@@ -322,13 +356,13 @@ const JobDetail: React.FC = () => {
             <div className="border-t border-gray-200 dark:border-zinc-700 pt-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Contact: {currentJob.employer?.email || 'Not specified'}
+                  {t('jobDetail.contact.label')}: {currentJob.employer?.email || t('jobDetail.contact.notSpecified')}
                 </div>
                 <button
                   onClick={() => window.open(`mailto:${currentJob.employer?.email}?subject=Application for ${currentJob.title}`, '_blank')}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  📧 Contact Employer
+                  📧 {t('jobDetail.contact.button')}
                 </button>
               </div>
             </div>
@@ -382,20 +416,20 @@ const JobDetail: React.FC = () => {
           className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-6 mb-6"
         >
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-            Additional Information
+            {t('jobDetail.additionalInfo.title')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Required Experience
+                {t('jobDetail.additionalInfo.requiredExperience')}
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
-                {currentJob.requiredExperience} {currentJob.requiredExperience === 1 ? 'year' : 'years'} of experience
+                {currentJob.requiredExperience} {currentJob.requiredExperience === 1 ? t('jobDetail.additionalInfo.year') : t('jobDetail.additionalInfo.years')} {t('jobDetail.additionalInfo.ofExperience')}
               </p>
             </div>
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Application Deadline
+                {t('jobDetail.additionalInfo.applicationDeadline')}
               </h3>
               <p className="text-gray-700 dark:text-gray-300">
                 {formatDate(currentJob.applicationDeadline)}

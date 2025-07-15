@@ -4,11 +4,12 @@
 
 import { api } from './api';
 import type { 
-  JobApplicationResponse, 
+  ApplicationEntity,
   JobApplicationRequest, 
   JobApplicationPageResponse, 
   JobApplicationSearchParams,
-  JobApplicationStatistics
+  JobApplicationStatistics,
+  ApplicationStatus
 } from '../types/application.types';
 
 /**
@@ -19,6 +20,8 @@ const APPLICATION_ENDPOINTS = {
   APPLICATION_BY_ID: (id: number) => `/applications/${id}`,
   MY_APPLICATIONS: '/applications/my-applications',
   APPLY_FOR_JOB: (jobId: number) => `/applications/apply/${jobId}`,
+  JOB_APPLICATIONS: (jobId: number) => `/applications/job/${jobId}`,
+  UPDATE_STATUS: (applicationId: number) => `/applications/${applicationId}/status`,
   WITHDRAW_APPLICATION: (id: number) => `/applications/${id}/withdraw`,
   APPLICATION_STATISTICS: '/applications/statistics',
   SEARCH: '/applications/search',
@@ -41,16 +44,16 @@ export class JobApplicationAPI {
   /**
    * Get application by ID
    */
-  static async getApplicationById(id: number): Promise<JobApplicationResponse> {
-    const response = await api.get<JobApplicationResponse>(APPLICATION_ENDPOINTS.APPLICATION_BY_ID(id));
+  static async getApplicationById(id: number): Promise<ApplicationEntity> {
+    const response = await api.get<ApplicationEntity>(APPLICATION_ENDPOINTS.APPLICATION_BY_ID(id));
     return response.data;
   }
 
   /**
    * Apply for a job (requires JOB_SEEKER role)
    */
-  static async applyForJob(jobId: number, applicationData: JobApplicationRequest): Promise<JobApplicationResponse> {
-    const response = await api.post<JobApplicationResponse>(
+  static async applyForJob(jobId: number, applicationData: JobApplicationRequest): Promise<ApplicationEntity> {
+    const response = await api.post<ApplicationEntity>(
       APPLICATION_ENDPOINTS.APPLY_FOR_JOB(jobId), 
       applicationData
     );
@@ -60,8 +63,8 @@ export class JobApplicationAPI {
   /**
    * Get current user's applications (requires JOB_SEEKER role)
    */
-  static async getMyApplications(): Promise<JobApplicationResponse[]> {
-    const response = await api.get<JobApplicationResponse[]>(APPLICATION_ENDPOINTS.MY_APPLICATIONS);
+  static async getMyApplications(): Promise<ApplicationEntity[]> {
+    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.MY_APPLICATIONS);
     return response.data;
   }
 
@@ -118,27 +121,59 @@ export class JobApplicationAPI {
     } catch (error) {
       // If endpoint doesn't exist, fall back to checking my applications
       const myApplications = await this.getMyApplications();
-      return myApplications.some(app => app.job.id === jobId);
+      return myApplications.some(app => app.jobId === jobId);
     }
   }
 
   /**
-   * Get applications for a specific job (employer only)
+   * Apply to a job with CV upload (matching your backend API)
    */
-  static async getJobApplications(jobId: number, page: number = 0, size: number = 10): Promise<JobApplicationPageResponse> {
-    const response = await api.get<JobApplicationPageResponse>(`/jobs/${jobId}/applications`, {
-      params: { page, size }
-    });
+  static async applyToJob(jobId: number, data: { coverLetter?: string; cvFile?: File }): Promise<ApplicationEntity> {
+    const formData = new FormData();
+    
+    if (data.coverLetter) {
+      formData.append('coverLetter', data.coverLetter);
+    }
+    
+    if (data.cvFile) {
+      formData.append('cvFile', data.cvFile);
+    }
+
+    const response = await api.post<ApplicationEntity>(
+      APPLICATION_ENDPOINTS.APPLY_FOR_JOB(jobId), 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   }
 
   /**
-   * Update application status (employer only)
+   * Get applications for a specific job (matching your backend API)
    */
-  static async updateApplicationStatus(id: number, status: string, notes?: string): Promise<JobApplicationResponse> {
-    const response = await api.put<JobApplicationResponse>(
-      APPLICATION_ENDPOINTS.APPLICATION_BY_ID(id),
-      { status, notes }
+  static async getApplicationsByJob(jobId: number): Promise<ApplicationEntity[]> {
+    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.JOB_APPLICATIONS(jobId));
+    return response.data;
+  }
+
+  /**
+   * Update application status (matching your backend API)
+   */
+  static async updateApplicationStatus(
+    applicationId: number, 
+    status: ApplicationStatus
+  ): Promise<ApplicationEntity> {
+    const response = await api.put<ApplicationEntity>(
+      APPLICATION_ENDPOINTS.UPDATE_STATUS(applicationId), 
+      status,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
     return response.data;
   }
@@ -156,6 +191,7 @@ export const jobApplicationAPI = {
   getApplicationStatistics: JobApplicationAPI.getApplicationStatistics,
   searchApplications: JobApplicationAPI.searchApplications,
   hasAppliedForJob: JobApplicationAPI.hasAppliedForJob,
-  getJobApplications: JobApplicationAPI.getJobApplications,
   updateApplicationStatus: JobApplicationAPI.updateApplicationStatus,
+  applyToJob: JobApplicationAPI.applyToJob,
+  getApplicationsByJob: JobApplicationAPI.getApplicationsByJob,
 };

@@ -8,11 +8,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchMyApplications, withdrawApplication, fetchApplicationStatistics } from '../features/application/applicationSlice';
 import ApplicationCard from '../features/application/components/ApplicationCard';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { RootState, AppDispatch } from '../store';
 
 const MyApplications: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { myApplications, statistics, loading, error } = useSelector((state: RootState) => state.application);
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -54,8 +57,37 @@ const MyApplications: React.FC = () => {
   const statusCounts = getStatusCounts();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-zinc-900">
+      {/* Navigation Bar */}
+      <nav className="bg-white dark:bg-zinc-800 shadow-sm border-b border-gray-200 dark:border-zinc-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left side - Back button and title */}
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="mr-4 p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                {t('myApplications.title')}
+              </h1>
+            </div>
+
+            {/* Right side - Language switcher */}
+            <div className="flex items-center">
+              <LanguageSwitcher />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -64,10 +96,10 @@ const MyApplications: React.FC = () => {
           className="mb-8"
         >
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            My Applications
+            {t('myApplications.title')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Track your job applications and their status
+            {t('myApplications.subtitle')}
           </p>
         </motion.div>
 
@@ -77,47 +109,33 @@ const MyApplications: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8"
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
             <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.totalApplications}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{statistics.total}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{t('myApplications.stats.total')}</div>
               </div>
             </div>
             
             <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{statistics.pendingApplications}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Pending</div>
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{statistics.pending}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{t('myApplications.stats.pending')}</div>
               </div>
             </div>
             
             <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{statistics.shortlistedApplications}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Shortlisted</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{statistics.approved}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{t('myApplications.stats.approved')}</div>
               </div>
             </div>
             
             <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{statistics.interviewsScheduled}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Interviews</div>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{statistics.offersReceived}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Offers</div>
-              </div>
-            </div>
-            
-            <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-gray-200 dark:border-zinc-700 p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statistics.rejectedApplications}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Rejected</div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{statistics.rejected}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{t('myApplications.stats.rejected')}</div>
               </div>
             </div>
           </motion.div>
@@ -133,13 +151,13 @@ const MyApplications: React.FC = () => {
           <div className="border-b border-gray-200 dark:border-zinc-700">
             <nav className="-mb-px flex space-x-8">
               {[
-                { key: 'all', label: 'All Applications', count: statusCounts.all },
-                { key: 'PENDING', label: 'Pending', count: statusCounts.PENDING },
-                { key: 'REVIEWED', label: 'Reviewed', count: statusCounts.REVIEWED },
-                { key: 'SHORTLISTED', label: 'Shortlisted', count: statusCounts.SHORTLISTED },
-                { key: 'INTERVIEW_SCHEDULED', label: 'Interviews', count: statusCounts.INTERVIEW_SCHEDULED },
-                { key: 'OFFERED', label: 'Offers', count: statusCounts.OFFERED },
-                { key: 'REJECTED', label: 'Rejected', count: statusCounts.REJECTED },
+                { key: 'all', label: t('myApplications.filters.all'), count: statusCounts.all },
+                { key: 'PENDING', label: t('myApplications.filters.pending'), count: statusCounts.PENDING },
+                { key: 'REVIEWED', label: t('myApplications.filters.reviewed'), count: statusCounts.REVIEWED },
+                { key: 'SHORTLISTED', label: t('myApplications.filters.shortlisted'), count: statusCounts.SHORTLISTED },
+                { key: 'INTERVIEW_SCHEDULED', label: t('myApplications.filters.interviews'), count: statusCounts.INTERVIEW_SCHEDULED },
+                { key: 'OFFERED', label: t('myApplications.filters.offers'), count: statusCounts.OFFERED },
+                { key: 'REJECTED', label: t('myApplications.filters.rejected'), count: statusCounts.REJECTED },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -184,7 +202,7 @@ const MyApplications: React.FC = () => {
             className="text-center py-12"
           >
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading your applications...</p>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">{t('myApplications.loading')}</p>
           </motion.div>
         )}
 
@@ -224,12 +242,12 @@ const MyApplications: React.FC = () => {
           >
             <div className="text-6xl mb-4">📋</div>
             <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              {filterStatus === 'all' ? 'No applications yet' : `No ${filterStatus.toLowerCase()} applications`}
+              {filterStatus === 'all' ? t('myApplications.empty.noApplications') : t('myApplications.empty.noFilteredApplications')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               {filterStatus === 'all' 
-                ? 'Start applying for jobs to see your applications here'
-                : `You don't have any applications with ${filterStatus.toLowerCase()} status`
+                ? t('myApplications.empty.noApplicationsDescription')
+                : t('myApplications.empty.noFilteredApplicationsDescription')
               }
             </p>
             {filterStatus === 'all' && (
@@ -237,11 +255,12 @@ const MyApplications: React.FC = () => {
                 onClick={() => navigate('/jobs')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
-                🔍 Browse Jobs
+                {t('myApplications.empty.browseJobs')}
               </button>
             )}
           </motion.div>
         )}
+        </div>
       </div>
     </div>
   );

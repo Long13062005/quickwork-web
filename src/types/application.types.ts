@@ -190,15 +190,13 @@ export interface JobApplicationApiError {
 
 /**
  * Job application statistics (for job seeker dashboard)
+ * Aligned with backend ApplicationStatisticsDTO
  */
 export interface JobApplicationStatistics {
-  totalApplications: number;
-  pendingApplications: number;
-  reviewedApplications: number;
-  shortlistedApplications: number;
-  interviewsScheduled: number;
-  offersReceived: number;
-  rejectedApplications: number;
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
 }
 
 /**

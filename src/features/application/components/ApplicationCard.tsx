@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import type { ApplicationEntity } from '../../../types/application.types';
 import { canWithdrawApplication, APPLICATION_STATUS_OPTIONS } from '../../../types/application.types';
 
@@ -24,6 +25,8 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
   showJobInfo = true,
   showApplicantInfo = false
 }) => {
+  const { t } = useLanguage();
+
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -73,7 +76,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
 
   const handleWithdraw = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    if (onWithdraw && window.confirm('Are you sure you want to withdraw this application? This action cannot be undone.')) {
+    if (onWithdraw && window.confirm(t('applications.actions.confirmWithdraw'))) {
       onWithdraw(application.id);
     }
   };
@@ -188,7 +191,7 @@ const ApplicationCard: React.FC<ApplicationCardProps> = ({
             onClick={handleWithdraw}
             className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium transition-colors"
           >
-            🚫 Withdraw Application
+            🚫 {t('applications.actions.withdraw')}
           </button>
         </div>
       )}

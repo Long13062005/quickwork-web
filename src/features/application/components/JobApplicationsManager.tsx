@@ -8,6 +8,8 @@ import { motion } from 'framer-motion';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchJobApplications, updateJobApplicationStatus } from '../applicationSlice';
 import EmployerApplicationCard from './EmployerApplicationCard';
+import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import type { RootState, AppDispatch } from '../../../store';
 import type { JobResponse } from '../../../types/job.types';
 import type { ApplicationStatus } from '../../../types/application.types';
@@ -23,6 +25,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
   onClose
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useLanguage();
   const { applications, loading, error, totalElements } = useSelector(
     (state: RootState) => state.application
   );
@@ -85,18 +88,21 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                Applications for "{job.title}"
+                {t('applications.manager.title')} "{job.title}"
               </h2>
               <p className="text-gray-600 dark:text-gray-400">
                 {job.location} • {job.type}
               </p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
+              >
+                ×
+              </button>
+            </div>
           </div>
         </div>
 
@@ -108,7 +114,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.total}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Total
+                {t('applications.stats.total')}
               </div>
             </div>
             <div className="text-center">
@@ -116,7 +122,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.pending}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Pending
+                {t('applications.stats.pending')}
               </div>
             </div>
             <div className="text-center">
@@ -124,7 +130,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.reviewed}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Reviewed
+                {t('applications.stats.reviewed')}
               </div>
             </div>
             <div className="text-center">
@@ -132,7 +138,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.shortlisted}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Shortlisted
+                {t('applications.stats.shortlisted')}
               </div>
             </div>
             <div className="text-center">
@@ -140,7 +146,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.accepted}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Accepted
+                {t('applications.stats.accepted')}
               </div>
             </div>
             <div className="text-center">
@@ -148,7 +154,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                 {stats.rejected}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Rejected
+                {t('applications.stats.rejected')}
               </div>
             </div>
           </div>
@@ -158,22 +164,22 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
         <div className="border-b border-gray-200 dark:border-zinc-700 p-6">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Filter by status:
+              {t('applications.filters.label')}:
             </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as ApplicationStatus | 'ALL')}
               className="text-sm border border-gray-300 dark:border-zinc-600 rounded-md px-3 py-1 bg-white dark:bg-zinc-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="ALL">All Applications</option>
+              <option value="ALL">{t('applications.filters.all')}</option>
               {APPLICATION_STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`applications.status.${option.value.toLowerCase()}`) || option.label}
                 </option>
               ))}
             </select>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredApplications.length} of {totalElements} applications
+              {t('applications.filters.showing')} {filteredApplications.length} {t('applications.filters.of')} {totalElements} {t('applications.filters.applications')}
             </div>
           </div>
         </div>
@@ -183,7 +189,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
           {loading && applications.length === 0 ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading applications...</p>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">{t('applications.loading')}</p>
             </div>
           ) : error ? (
             <div className="text-center py-12">
@@ -194,25 +200,51 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📋</div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {statusFilter === 'ALL' ? 'No applications yet' : `No ${statusFilter.toLowerCase()} applications`}
+                {statusFilter === 'ALL' ? t('applications.empty.noApplications') : t('applications.empty.noStatusApplications')}
               </h3>
               <p className="text-gray-600 dark:text-gray-400">
                 {statusFilter === 'ALL' 
-                  ? 'Applications will appear here once job seekers start applying.'
-                  : `Try changing the filter to see applications with different statuses.`
+                  ? t('applications.empty.noApplicationsDescription')
+                  : t('applications.empty.noStatusApplicationsDescription')
                 }
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredApplications.map((application) => (
-                <EmployerApplicationCard
-                  key={application.id}
-                  application={application}
-                  onStatusUpdate={handleStatusUpdate}
-                  loading={loading}
-                />
-              ))}
+              {filteredApplications.map((application) => {
+                // Convert ApplicationEntity to JobApplicationResponse format for the card
+                const jobApplicationResponse = {
+                  id: application.id,
+                  job: {
+                    id: application.jobId,
+                    title: application.jobTitle,
+                    companyName: job.employer?.email || 'Unknown Company',
+                    location: application.jobLocation,
+                    type: application.jobType,
+                    minSalary: application.minSalary,
+                    maxSalary: application.maxSalary,
+                  },
+                  applicant: {
+                    id: application.userId,
+                    email: application.userEmail,
+                    fullName: application.userEmail, // Fallback to email if name not available
+                  },
+                  appliedDate: application.appliedDate,
+                  status: application.status,
+                  coverLetter: '', // Not available in ApplicationEntity
+                  resumeUrl: '', // Not available in ApplicationEntity
+                  lastUpdated: application.appliedDate,
+                };
+                
+                return (
+                  <EmployerApplicationCard
+                    key={application.id}
+                    application={jobApplicationResponse}
+                    onStatusUpdate={handleStatusUpdate}
+                    loading={loading}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -222,7 +254,7 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
           <div className="border-t border-gray-200 dark:border-zinc-700 p-6">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} results
+                {t('applications.pagination.showing')} {currentPage * pageSize + 1} {t('applications.pagination.to')} {Math.min((currentPage + 1) * pageSize, totalElements)} {t('applications.pagination.of')} {totalElements} {t('applications.pagination.results')}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -230,17 +262,17 @@ const JobApplicationsManager: React.FC<JobApplicationsManagerProps> = ({
                   disabled={currentPage === 0}
                   className="px-3 py-1 text-sm border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  {t('applications.pagination.previous')}
                 </button>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Page {currentPage + 1} of {Math.ceil(totalElements / pageSize)}
+                  {t('applications.pagination.page')} {currentPage + 1} {t('applications.pagination.of')} {Math.ceil(totalElements / pageSize)}
                 </span>
                 <button
                   onClick={() => setCurrentPage(prev => prev + 1)}
                   disabled={(currentPage + 1) * pageSize >= totalElements}
                   className="px-3 py-1 text-sm border border-gray-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  {t('applications.pagination.next')}
                 </button>
               </div>
             </div>

@@ -10,6 +10,7 @@ import * as Yup from 'yup';
 import toast from 'react-hot-toast';
 import { applyToJobWithCV } from '../applicationSlice';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import type { AppDispatch } from '../../../store';
 import type { JobApplicationRequest } from '../../../types/application.types';
 import type { JobResponse } from '../../../types/job.types';
@@ -130,14 +131,17 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          Apply for Position
+          {t('applications.form.title')}
         </h2>
-        <button
-          onClick={onCancel}
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
-        >
-          ×
-        </button>
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher />
+          <button
+            onClick={onCancel}
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Job Summary */}

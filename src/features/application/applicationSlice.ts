@@ -232,7 +232,27 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(fetchAllApplications.fulfilled, (state, action) => {
         state.loading = false;
-        state.applications = action.payload.content;
+        // Ensure we have ApplicationEntity format
+        state.applications = action.payload.content.map((app: any) => ({
+          id: app.id,
+          status: app.status,
+          appliedDate: app.appliedDate || app.appliedAt || new Date().toISOString(),
+          userId: app.userId || app.applicant?.id || 0,
+          userEmail: app.userEmail || app.applicant?.email || 'unknown@example.com',
+          jobId: app.jobId || app.job?.id || 0,
+          jobTitle: app.jobTitle || app.job?.title || 'Unknown Job',
+          jobDescription: app.jobDescription || app.job?.description || '',
+          jobLocation: app.jobLocation || app.job?.location || 'Unknown Location',
+          minSalary: app.minSalary || app.job?.minSalary || 0,
+          maxSalary: app.maxSalary || app.job?.maxSalary || 0,
+          jobType: app.jobType || app.job?.type || 'Unknown Type',
+          jobPostedDate: app.jobPostedDate || app.job?.postedDate || new Date().toISOString(),
+          requiredSkills: app.requiredSkills || app.job?.requiredSkills || [],
+          requiredExperience: app.requiredExperience || app.job?.requiredExperience || 0,
+          applicationDeadline: app.applicationDeadline || app.job?.applicationDeadline || new Date().toISOString(),
+          employerId: app.employerId || app.job?.employerId || 0,
+          employerEmail: app.employerEmail || app.job?.employerEmail || 'unknown@example.com',
+        }));
         state.totalPages = action.payload.totalPages;
         state.totalElements = action.payload.totalElements;
         state.currentPage = action.payload.number;
@@ -360,7 +380,27 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(searchApplications.fulfilled, (state, action) => {
         state.loading = false;
-        state.applications = action.payload.content;
+        // Ensure we have ApplicationEntity format
+        state.applications = action.payload.content.map((app: any) => ({
+          id: app.id,
+          status: app.status,
+          appliedDate: app.appliedDate || app.appliedAt || new Date().toISOString(),
+          userId: app.userId || app.applicant?.id || 0,
+          userEmail: app.userEmail || app.applicant?.email || 'unknown@example.com',
+          jobId: app.jobId || app.job?.id || 0,
+          jobTitle: app.jobTitle || app.job?.title || 'Unknown Job',
+          jobDescription: app.jobDescription || app.job?.description || '',
+          jobLocation: app.jobLocation || app.job?.location || 'Unknown Location',
+          minSalary: app.minSalary || app.job?.minSalary || 0,
+          maxSalary: app.maxSalary || app.job?.maxSalary || 0,
+          jobType: app.jobType || app.job?.type || 'Unknown Type',
+          jobPostedDate: app.jobPostedDate || app.job?.postedDate || new Date().toISOString(),
+          requiredSkills: app.requiredSkills || app.job?.requiredSkills || [],
+          requiredExperience: app.requiredExperience || app.job?.requiredExperience || 0,
+          applicationDeadline: app.applicationDeadline || app.job?.applicationDeadline || new Date().toISOString(),
+          employerId: app.employerId || app.job?.employerId || 0,
+          employerEmail: app.employerEmail || app.job?.employerEmail || 'unknown@example.com',
+        }));
         state.totalPages = action.payload.totalPages;
         state.totalElements = action.payload.totalElements;
         state.currentPage = action.payload.number;
@@ -390,30 +430,26 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(fetchJobApplications.fulfilled, (state, action) => {
         state.loading = false;
-        // Convert ApplicationEntity[] to JobApplicationResponse[]
+        // Convert ApplicationEntity[] to match the expected format
         state.applications = action.payload.content.map((app: any) => ({
           id: app.id,
-          job: {
-            id: app.jobId || app.job?.id || 0,
-            title: app.job?.title || 'Unknown Job',
-            companyName: app.job?.company || 'Unknown Company',
-            location: app.job?.location || 'Unknown Location',
-            type: app.job?.type || 'Unknown Type',
-            minSalary: app.job?.minSalary || 0,
-            maxSalary: app.job?.maxSalary || 0,
-          },
-          applicant: {
-            id: app.userId || app.user?.id || 0,
-            email: app.user?.email || 'unknown@example.com',
-            fullName: app.user ? 
-              `${app.user.firstName} ${app.user.lastName}` : 
-              'Unknown User',
-          },
-          appliedDate: app.appliedAt || new Date().toISOString(),
           status: app.status,
-          coverLetter: app.coverLetter,
-          resumeUrl: app.cvFileUrl,
-          lastUpdated: app.appliedAt || new Date().toISOString(),
+          appliedDate: app.appliedAt || new Date().toISOString(),
+          userId: app.userId || app.user?.id || 0,
+          userEmail: app.user?.email || 'unknown@example.com',
+          jobId: app.jobId || app.job?.id || 0,
+          jobTitle: app.job?.title || 'Unknown Job',
+          jobDescription: app.job?.description || '',
+          jobLocation: app.job?.location || 'Unknown Location',
+          minSalary: app.job?.minSalary || 0,
+          maxSalary: app.job?.maxSalary || 0,
+          jobType: app.job?.type || 'Unknown Type',
+          jobPostedDate: app.job?.postedDate || new Date().toISOString(),
+          requiredSkills: app.job?.requiredSkills || [],
+          requiredExperience: app.job?.requiredExperience || 0,
+          applicationDeadline: app.job?.applicationDeadline || new Date().toISOString(),
+          employerId: app.job?.employerId || 0,
+          employerEmail: app.job?.employerEmail || 'unknown@example.com',
         }));
         state.totalPages = action.payload.totalPages;
         state.totalElements = action.payload.totalElements;
@@ -434,41 +470,24 @@ const jobApplicationSlice = createSlice({
         state.loading = false;
         const updatedApplication = action.payload;
         
-        // Convert ApplicationEntity to JobApplicationResponse format
-        const jobApplicationResponse: JobApplicationResponse = {
-          id: updatedApplication.id,
-          job: {
-            id: updatedApplication.jobId,
-            title: updatedApplication.job?.title || 'Unknown Job',
-            companyName: updatedApplication.job?.company || 'Unknown Company',
-            location: updatedApplication.job?.location || 'Unknown Location',
-            type: updatedApplication.job?.type || 'Unknown Type',
-            minSalary: updatedApplication.job?.minSalary || 0,
-            maxSalary: updatedApplication.job?.maxSalary || 0,
-          },
-          applicant: {
-            id: updatedApplication.userId,
-            email: updatedApplication.user?.email || 'unknown@example.com',
-            fullName: updatedApplication.user ? 
-              `${updatedApplication.user.firstName} ${updatedApplication.user.lastName}` : 
-              'Unknown User',
-          },
-          appliedDate: updatedApplication.appliedAt,
-          status: updatedApplication.status,
-          coverLetter: updatedApplication.coverLetter,
-          resumeUrl: updatedApplication.cvFileUrl,
-          lastUpdated: updatedApplication.appliedAt,
-        };
-        
-        // Update in applications array
+        // Update the application in the applications array
         const appIndex = state.applications.findIndex(app => app.id === updatedApplication.id);
         if (appIndex !== -1) {
-          state.applications[appIndex] = jobApplicationResponse;
+          // Update the existing application with the new status
+          state.applications[appIndex] = {
+            ...state.applications[appIndex],
+            status: updatedApplication.status,
+            appliedDate: updatedApplication.appliedDate,
+          };
         }
         
         // Update current application if it's the same
         if (state.currentApplication?.id === updatedApplication.id) {
-          state.currentApplication = jobApplicationResponse;
+          state.currentApplication = {
+            ...state.currentApplication,
+            status: updatedApplication.status,
+            appliedDate: updatedApplication.appliedDate,
+          };
         }
       })
       .addCase(updateJobApplicationStatus.rejected, (state, action) => {

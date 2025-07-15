@@ -23,7 +23,7 @@ const APPLICATION_ENDPOINTS = {
   JOB_APPLICATIONS: (jobId: number) => `/applications/job/${jobId}`,
   UPDATE_STATUS: (applicationId: number) => `/applications/${applicationId}/status`,
   WITHDRAW_APPLICATION: (id: number) => `/applications/${id}/withdraw`,
-  APPLICATION_STATISTICS: '/applications/statistics',
+  APPLICATION_STATISTICS: '/applications/statistics/my',
   SEARCH: '/applications/search',
 } as const;
 

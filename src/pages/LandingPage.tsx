@@ -10,12 +10,14 @@ import { useSelector } from 'react-redux';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useProfile } from '../features/profile/hooks/useProfile';
 import type { RootState } from '../store';
 import QuickworkLogo from '../assets/Quickwork_logo.png';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { currentProfile } = useProfile();
   const { t, language } = useLanguage();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchLocation, setSearchLocation] = useState('');
@@ -83,9 +85,27 @@ const LandingPage: React.FC = () => {
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      // Navigate to role-specific dashboard
+      if (currentProfile?.role === 'employer') {
+        navigate('/employer/dashboard');
+      } else if (currentProfile?.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard'); // Default to user dashboard for job seekers
+      }
     } else {
       navigate('/auth/register');
+    }
+  };
+
+  const handleDashboardClick = () => {
+    // Navigate to role-specific dashboard
+    if (currentProfile?.role === 'employer') {
+      navigate('/employer/dashboard');
+    } else if (currentProfile?.role === 'admin') {
+      navigate('/admin/dashboard');
+    } else {
+      navigate('/dashboard'); // Default to user dashboard for job seekers
     }
   };
 
@@ -170,7 +190,7 @@ const LandingPage: React.FC = () => {
                 </>
               ) : (
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={handleDashboardClick}
                   className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                 >
                   <AnimatedText className="inline-block">{t('header.dashboard')}</AnimatedText>

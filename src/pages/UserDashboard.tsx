@@ -14,6 +14,9 @@ import { AuthContext } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
+import { fetchApplicationStatistics, fetchMyApplications } from '../features/application/applicationSlice';
+import { fetchJobs } from '../features/job/jobSlice';
 import type { JobSeekerProfile, EmployerProfile, AdminProfile } from '../features/profile/types/profile.types';
 
 // Simple SVG icons as components
@@ -91,18 +94,6 @@ const CrownIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-interface JobRecommendation {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: 'full_time' | 'part_time' | 'contract' | 'remote';
-  salary: string;
-  posted: string;
-  matched: number; // percentage match
-  logo?: string;
-}
-
 interface Application {
   id: string;
   jobTitle: string;
@@ -124,13 +115,16 @@ export default function UserDashboard() {
   const { logout } = useContext(AuthContext);
   const { currentProfile, loading, fetchMyProfile } = useProfile();
   const { t } = useLanguage();
+  const dispatch = useAppDispatch();
+  const { statistics, applications } = useAppSelector(state => state.application);
+  const { jobs, loading: jobsLoading } = useAppSelector(state => state.job);
+  
   const [stats, setStats] = useState<DashboardStats>({
     profileViews: 0,
     applications: 0,
     interviews: 0,
     profileCompletion: 0
   });
-  const [jobRecommendations, setJobRecommendations] = useState<JobRecommendation[]>([]);
   const [recentApplications, setRecentApplications] = useState<Application[]>([]);
 
   const handleLogout = useCallback(async () => {
@@ -168,6 +162,11 @@ export default function UserDashboard() {
       try {
         await fetchMyProfile();
         await loadDashboardData();
+        // Fetch application statistics
+        dispatch(fetchApplicationStatistics());
+        dispatch(fetchMyApplications());
+        // Fetch job listings
+        dispatch(fetchJobs({ page: 0, size: 6 })); // Get 6 jobs for recommendations
       } catch (error) {
         console.error('Failed to load profile or dashboard data:', error);
         toast.error('Failed to load profile data. Please refresh the page.');
@@ -175,7 +174,7 @@ export default function UserDashboard() {
     };
 
     loadProfile();
-  }, [fetchMyProfile]);
+  }, [fetchMyProfile, dispatch]);
 
   // Redirect admin users to admin dashboard
   useEffect(() => {
@@ -185,6 +184,57 @@ export default function UserDashboard() {
       return;
     }
   }, [currentProfile, navigate]);
+
+  // Update stats when application statistics are loaded
+  useEffect(() => {
+    if (statistics) {
+      setStats(prevStats => ({
+        ...prevStats,
+        applications: statistics.total
+      }));
+    }
+  }, [statistics]);
+
+  // Update recent applications when applications are loaded
+  useEffect(() => {
+    if (applications && applications.length > 0) {
+      // Take the 3 most recent applications
+      const recentApps = applications
+        .sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime())
+        .slice(0, 3)
+        .map(app => {
+          // Map backend status to component status
+          let mappedStatus: Application['status'] = 'pending';
+          switch (app.status) {
+            case 'ACCEPTED':
+              mappedStatus = 'accepted';
+              break;
+            case 'INTERVIEW_SCHEDULED':
+            case 'INTERVIEW_COMPLETED':
+              mappedStatus = 'interview';
+              break;
+            case 'REVIEWED':
+            case 'SHORTLISTED':
+              mappedStatus = 'reviewing';
+              break;
+            case 'REJECTED':
+              mappedStatus = 'rejected';
+              break;
+            default:
+              mappedStatus = 'pending';
+          }
+          
+          return {
+            id: app.id.toString(),
+            jobTitle: app.jobTitle,
+            company: app.employerEmail, // Use employerEmail as company name for now
+            appliedDate: app.appliedDate,
+            status: mappedStatus
+          };
+        });
+      setRecentApplications(recentApps);
+    }
+  }, [applications]);
 
   const loadDashboardData = async () => {
     try {
@@ -222,66 +272,13 @@ export default function UserDashboard() {
       // Mock data - replace with actual API calls
       setStats({
         profileViews: 24,
-        applications: 8,
+        applications: statistics ? statistics.total : 0, // Use actual count from statistics
         interviews: 3,
         profileCompletion: calculateProfileCompletion()
       });
 
-      setJobRecommendations([
-        {
-          id: '1',
-          title: 'Senior Frontend Developer',
-          company: 'TechCorp Inc.',
-          location: 'San Francisco, CA',
-          type: 'full_time',
-          salary: '$120k - $160k',
-          posted: '2 days ago',
-          matched: 92
-        },
-        {
-          id: '2',
-          title: 'React Developer',
-          company: 'StartupXYZ',
-          location: 'Remote',
-          type: 'remote',
-          salary: '$90k - $120k',
-          posted: '1 week ago',
-          matched: 87
-        },
-        {
-          id: '3',
-          title: 'Full Stack Engineer',
-          company: 'Innovation Labs',
-          location: 'New York, NY',
-          type: 'full_time',
-          salary: '$110k - $140k',
-          posted: '3 days ago',
-          matched: 78
-        }
-      ]);
-
-      setRecentApplications([
-      {
-        id: '1',
-        jobTitle: 'Senior React Developer',
-        company: 'Google',
-        appliedDate: '2024-01-15',
-        status: 'interview'
-      },
-      {
-        id: '2',
-        jobTitle: 'Frontend Engineer',
-        company: 'Microsoft',
-        appliedDate: '2024-01-12',
-        status: 'reviewing'
-      },
-      {
-        id: '3',
-        jobTitle: 'UI Developer',
-        company: 'Apple',
-        appliedDate: '2024-01-10',
-        status: 'pending'        }
-      ]);
+      // Job recommendations will come from Redux store
+      // Recent applications will be populated from API in useEffect
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       toast.error('Failed to load dashboard data.');
@@ -516,40 +513,60 @@ export default function UserDashboard() {
                 </div>
               </div>
               <div className="p-6 space-y-4">
-                {jobRecommendations.map((job) => (
-                  <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{job.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300">{job.company}</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                          <span>{job.location}</span>
-                          <span className="capitalize">
-                            {job.type === 'full_time' ? t('dashboard.jobs.fullTime') :
-                             job.type === 'part_time' ? t('dashboard.jobs.partTime') :
-                             job.type === 'contract' ? t('dashboard.jobs.contract') :
-                             t('dashboard.jobs.remote')}
-                          </span>
-                          <span>{job.salary}</span>
+                {jobsLoading ? (
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    Loading jobs...
+                  </div>
+                ) : jobs && jobs.length > 0 ? (
+                  jobs.slice(0, 3).map((job) => (
+                    <div key={job.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-white dark:bg-gray-800">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{job.title}</h3>
+                          <p className="text-gray-600 dark:text-gray-300">{job.employer.email}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span>{job.location}</span>
+                            <span className="capitalize">
+                              {job.type === 'FULL_TIME' ? t('dashboard.jobs.fullTime') :
+                               job.type === 'PART_TIME' ? t('dashboard.jobs.partTime') :
+                               job.type === 'CONTRACT' ? t('dashboard.jobs.contract') :
+                               job.type === 'FREELANCE' ? t('dashboard.jobs.remote') :
+                               job.type}
+                            </span>
+                            <span>
+                              {job.minSalary && job.maxSalary 
+                                ? `$${job.minSalary.toLocaleString()} - $${job.maxSalary.toLocaleString()}`
+                                : 'Salary not specified'}
+                            </span>
+                          </div>
+                          <div className="flex items-center mt-2">
+                            <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 px-2 py-1 rounded-full">
+                              {job.status === 'OPEN' ? 'Open' : job.status}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                              {new Date(job.postedDate).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center mt-2">
-                          <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 px-2 py-1 rounded-full">
-                            {job.matched}% {t('dashboard.jobs.match')}
-                          </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">{job.posted}</span>
+                        <div className="flex space-x-2">
+                          <button className="p-2 text-gray-400 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400 transition-colors">
+                            <HeartIcon className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => navigate(`/jobs/${job.id}`)}
+                            className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                          >
+                            {t('dashboard.jobs.apply')}
+                          </button>
                         </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button className="p-2 text-gray-400 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400 transition-colors">
-                          <HeartIcon className="w-5 h-5" />
-                        </button>
-                        <button className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors">
-                          {t('dashboard.jobs.apply')}
-                        </button>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 dark:text-gray-400">
+                    No jobs available at the moment.
                   </div>
-                ))}
+                )}
               </div>
             </motion.div>
           </div>

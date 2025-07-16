@@ -24,9 +24,16 @@ const MyApplications: React.FC = () => {
     dispatch(fetchApplicationStatistics());
   }, [dispatch]);
 
-  const handleWithdrawApplication = async (id: number) => {
+  const handleWithdrawApplication = async (applicationId: number) => {
     try {
-      await dispatch(withdrawApplication(id)).unwrap();
+      // Find the application to get its jobId
+      const application = myApplications.find(app => app.id === applicationId);
+      if (!application) {
+        console.error('Application not found');
+        return;
+      }
+      
+      await dispatch(withdrawApplication(application.jobId)).unwrap();
     } catch (error) {
       console.error('Failed to withdraw application:', error);
     }

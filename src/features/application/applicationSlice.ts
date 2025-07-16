@@ -107,9 +107,18 @@ export const fetchMyApplications = createAsyncThunk(
 // Withdraw application
 export const withdrawApplication = createAsyncThunk(
   'jobApplication/withdrawApplication',
+  async (jobId: number) => {
+    const response = await jobApplicationAPI.withdrawApplication(jobId);
+    return response;
+  }
+);
+
+// Delete application
+export const deleteApplication = createAsyncThunk(
+  'jobApplication/deleteApplication',
   async (id: number) => {
-    await jobApplicationAPI.withdrawApplication(id);
-    return id;
+    const response = await jobApplicationAPI.deleteApplication(id);
+    return response;
   }
 );
 
@@ -338,25 +347,59 @@ const jobApplicationSlice = createSlice({
       })
       .addCase(withdrawApplication.fulfilled, (state, action) => {
         state.loading = false;
-        const withdrawnId = action.payload;
+        const withdrawnApp = action.payload;
         
-        // Remove from my applications
-        const withdrawnApp = state.myApplications.find(app => app.id === withdrawnId);
-        state.myApplications = state.myApplications.filter(app => app.id !== withdrawnId);
-        
-        // Remove from applied jobs if found
-        if (withdrawnApp) {
-          state.appliedJobs = state.appliedJobs.filter(jobId => jobId !== withdrawnApp.jobId);
+        // Update the application status in myApplications
+        const appIndex = state.myApplications.findIndex(app => app.id === withdrawnApp.id);
+        if (appIndex !== -1) {
+          state.myApplications[appIndex] = withdrawnApp;
         }
         
-        // Clear current application if it's the withdrawn one
-        if (state.currentApplication?.id === withdrawnId) {
-          state.currentApplication = null;
+        // Update in all applications array if present
+        const allAppIndex = state.applications.findIndex(app => app.id === withdrawnApp.id);
+        if (allAppIndex !== -1) {
+          state.applications[allAppIndex] = withdrawnApp;
+        }
+        
+        // Update current application if it's the withdrawn one
+        if (state.currentApplication?.id === withdrawnApp.id) {
+          state.currentApplication = withdrawnApp;
         }
       })
       .addCase(withdrawApplication.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to withdraw application';
+      })
+      
+      // Delete application
+      .addCase(deleteApplication.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteApplication.fulfilled, (state, action) => {
+        state.loading = false;
+        const deletedApp = action.payload;
+        
+        // Update the application status in myApplications
+        const appIndex = state.myApplications.findIndex(app => app.id === deletedApp.id);
+        if (appIndex !== -1) {
+          state.myApplications[appIndex] = deletedApp;
+        }
+        
+        // Update in all applications array if present
+        const allAppIndex = state.applications.findIndex(app => app.id === deletedApp.id);
+        if (allAppIndex !== -1) {
+          state.applications[allAppIndex] = deletedApp;
+        }
+        
+        // Update current application if it's the deleted one
+        if (state.currentApplication?.id === deletedApp.id) {
+          state.currentApplication = deletedApp;
+        }
+      })
+      .addCase(deleteApplication.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to delete application';
       })
       
       // Fetch application statistics

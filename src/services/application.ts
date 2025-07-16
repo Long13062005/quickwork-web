@@ -22,7 +22,8 @@ const APPLICATION_ENDPOINTS = {
   APPLY_FOR_JOB: (jobId: number) => `/applications/apply/${jobId}`,
   JOB_APPLICATIONS: (jobId: number) => `/applications/job/${jobId}`,
   UPDATE_STATUS: (applicationId: number) => `/applications/${applicationId}/status`,
-  WITHDRAW_APPLICATION: (id: number) => `/applications/${id}/withdraw`,
+  DELETE_APPLICATION: (id: number) => `/applications/${id}`,
+  WITHDRAW_BY_JOB_ID: (jobId: number) => `/applications/withdraw/job/${jobId}`,
   APPLICATION_STATISTICS: '/applications/statistics/my',
   SEARCH: '/applications/search',
 } as const;
@@ -36,7 +37,8 @@ export class JobApplicationAPI {
    */
   static async getAllApplications(page: number = 0, size: number = 10): Promise<JobApplicationPageResponse> {
     const response = await api.get<JobApplicationPageResponse>(APPLICATION_ENDPOINTS.APPLICATIONS, {
-      params: { page, size }
+      params: { page, size },
+      withCredentials: true
     });
     return response.data;
   }
@@ -45,7 +47,9 @@ export class JobApplicationAPI {
    * Get application by ID
    */
   static async getApplicationById(id: number): Promise<ApplicationEntity> {
-    const response = await api.get<ApplicationEntity>(APPLICATION_ENDPOINTS.APPLICATION_BY_ID(id));
+    const response = await api.get<ApplicationEntity>(APPLICATION_ENDPOINTS.APPLICATION_BY_ID(id), {
+      withCredentials: true
+    });
     return response.data;
   }
 
@@ -55,7 +59,10 @@ export class JobApplicationAPI {
   static async applyForJob(jobId: number, applicationData: JobApplicationRequest): Promise<ApplicationEntity> {
     const response = await api.post<ApplicationEntity>(
       APPLICATION_ENDPOINTS.APPLY_FOR_JOB(jobId), 
-      applicationData
+      applicationData,
+      {
+        withCredentials: true
+      }
     );
     return response.data;
   }
@@ -64,22 +71,53 @@ export class JobApplicationAPI {
    * Get current user's applications (requires JOB_SEEKER role)
    */
   static async getMyApplications(): Promise<ApplicationEntity[]> {
-    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.MY_APPLICATIONS);
+    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.MY_APPLICATIONS, {
+      withCredentials: true
+    });
     return response.data;
   }
 
   /**
-   * Withdraw application (requires JOB_SEEKER role)
+   * Withdraw application by job ID (requires USER role)
    */
-  static async withdrawApplication(id: number): Promise<void> {
-    await api.put(APPLICATION_ENDPOINTS.WITHDRAW_APPLICATION(id));
+  static async withdrawApplication(jobId: number): Promise<ApplicationEntity> {
+    const response = await api.put<ApplicationEntity>(
+      APPLICATION_ENDPOINTS.WITHDRAW_BY_JOB_ID(jobId),
+      {},
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      }
+    );
+    return response.data;
+  }
+
+  /**
+   * Delete application by updating status to WITHDRAWN (requires USER or EMPLOYER role)
+   */
+  static async deleteApplication(id: number): Promise<ApplicationEntity> {
+    const response = await api.put<ApplicationEntity>(
+      APPLICATION_ENDPOINTS.UPDATE_STATUS(id), 
+      'WITHDRAWN',
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      }
+    );
+    return response.data;
   }
 
   /**
    * Get application statistics for current user
    */
   static async getApplicationStatistics(): Promise<JobApplicationStatistics> {
-    const response = await api.get<JobApplicationStatistics>(APPLICATION_ENDPOINTS.APPLICATION_STATISTICS);
+    const response = await api.get<JobApplicationStatistics>(APPLICATION_ENDPOINTS.APPLICATION_STATISTICS, {
+      withCredentials: true
+    });
     return response.data;
   }
 
@@ -106,7 +144,8 @@ export class JobApplicationAPI {
     if (dateTo) params.dateTo = dateTo;
 
     const response = await api.get<JobApplicationPageResponse>(APPLICATION_ENDPOINTS.SEARCH, {
-      params
+      params,
+      withCredentials: true
     });
     return response.data;
   }
@@ -116,7 +155,9 @@ export class JobApplicationAPI {
    */
   static async hasAppliedForJob(jobId: number): Promise<boolean> {
     try {
-      const response = await api.get<{ hasApplied: boolean }>(`/applications/check/${jobId}`);
+      const response = await api.get<{ hasApplied: boolean }>(`/applications/check/${jobId}`, {
+        withCredentials: true
+      });
       return response.data.hasApplied;
     } catch (error) {
       // If endpoint doesn't exist, fall back to checking my applications
@@ -146,6 +187,7 @@ export class JobApplicationAPI {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        withCredentials: true
       }
     );
     return response.data;
@@ -155,7 +197,9 @@ export class JobApplicationAPI {
    * Get applications for a specific job (matching your backend API)
    */
   static async getApplicationsByJob(jobId: number): Promise<ApplicationEntity[]> {
-    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.JOB_APPLICATIONS(jobId));
+    const response = await api.get<ApplicationEntity[]>(APPLICATION_ENDPOINTS.JOB_APPLICATIONS(jobId), {
+      withCredentials: true
+    });
     return response.data;
   }
 
@@ -173,6 +217,7 @@ export class JobApplicationAPI {
         headers: {
           'Content-Type': 'application/json',
         },
+        withCredentials: true
       }
     );
     return response.data;
@@ -188,6 +233,7 @@ export const jobApplicationAPI = {
   applyForJob: JobApplicationAPI.applyForJob,
   getMyApplications: JobApplicationAPI.getMyApplications,
   withdrawApplication: JobApplicationAPI.withdrawApplication,
+  deleteApplication: JobApplicationAPI.deleteApplication,
   getApplicationStatistics: JobApplicationAPI.getApplicationStatistics,
   searchApplications: JobApplicationAPI.searchApplications,
   hasAppliedForJob: JobApplicationAPI.hasAppliedForJob,

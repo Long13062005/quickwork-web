@@ -223,6 +223,18 @@ const translations = {
     'dashboard.actions.manageJobs': 'Quản lý việc làm',
     'dashboard.actions.changePassword': 'Đổi mật khẩu',
     
+    // Dashboard - Quick Actions Descriptions
+    'dashboard.actions.browseJobs.description': 'Khám phá hàng nghìn cơ hội việc làm',
+    'dashboard.actions.viewApplications.description': 'Theo dõi trạng thái đơn ứng tuyển của bạn',
+    'dashboard.actions.editProfile.description': 'Cập nhật thông tin cá nhân và kỹ năng',
+    'dashboard.actions.updateResume.description': 'Tải lên và cập nhật CV của bạn',
+    'dashboard.actions.viewBundles.description': 'Xem các gói dịch vụ cao cấp',
+    'dashboard.actions.favoriteJobs.description': 'Quản lý danh sách việc làm yêu thích',
+    'dashboard.actions.manageJobs.description': 'Tạo, chỉnh sửa và theo dõi bài đăng tuyển dụng',
+    'dashboard.actions.companyProfile': 'Hồ sơ công ty',
+    'dashboard.actions.companyProfile.description': 'Cập nhật thông tin công ty và thương hiệu',
+    'dashboard.actions.changePassword.description': 'Cập nhật cài đặt bảo mật tài khoản',
+    
     // Dashboard - Recent Activity
     'dashboard.activity.recentApplications': 'Đơn ứng tuyển gần đây',
     'dashboard.activity.recentCandidates': 'Ứng viên gần đây',
@@ -777,6 +789,18 @@ const translations = {
     'dashboard.actions.viewAnalytics': 'View Analytics',
     'dashboard.actions.manageJobs': 'Manage Jobs',
     'dashboard.actions.changePassword': 'Change Password',
+    
+    // Dashboard - Quick Actions Descriptions
+    'dashboard.actions.browseJobs.description': 'Explore thousands of job opportunities',
+    'dashboard.actions.viewApplications.description': 'Track your application status',
+    'dashboard.actions.editProfile.description': 'Update your personal information and skills',
+    'dashboard.actions.updateResume.description': 'Upload and update your resume',
+    'dashboard.actions.viewBundles.description': 'View premium service packages',
+    'dashboard.actions.favoriteJobs.description': 'Manage your favorite job listings',
+    'dashboard.actions.manageJobs.description': 'Create, edit, and monitor job postings',
+    'dashboard.actions.companyProfile': 'Company Profile',
+    'dashboard.actions.companyProfile.description': 'Update company information and branding',
+    'dashboard.actions.changePassword.description': 'Update your account security settings',
     
     // Dashboard - Recent Activity
     'dashboard.activity.recentApplications': 'Recent Applications',

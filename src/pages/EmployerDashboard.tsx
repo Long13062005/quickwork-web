@@ -491,38 +491,104 @@ export default function EmployerDashboard() {
               transition={{ delay: 0.6 }}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6"
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <NavLink 
-                  to="/jobs/manage"
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+              <div className="flex items-center mb-6">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg mr-3">
+                  <svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('dashboard.actions.quickActions')}</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-3">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group"
                 >
-                  <span className="text-gray-400 dark:text-gray-300 mr-3">📋</span>
-                  <span className="text-gray-700 dark:text-gray-200">Manage Jobs</span>
-                </NavLink>
-                <NavLink 
-                  to="/jobs"
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                  <NavLink 
+                    to="/jobs/manage"
+                    className="w-full flex items-center px-4 py-3 text-left bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800/30 dark:hover:to-indigo-800/30 rounded-lg transition-all duration-200 no-underline border border-blue-200/50 dark:border-blue-700/50 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-blue-100 dark:bg-blue-800/50 rounded-lg mr-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-700/50 transition-colors">
+                      <BriefcaseIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{t('dashboard.actions.manageJobs')}</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.actions.manageJobs.description')}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </NavLink>
+                </motion.div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group"
                 >
-                  <span className="text-gray-400 dark:text-gray-300 mr-3">🔍</span>
-                  <span className="text-gray-700 dark:text-gray-200">Browse Jobs</span>
-                </NavLink>
+                  <NavLink 
+                    to="/jobs"
+                    className="w-full flex items-center px-4 py-3 text-left bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-800/30 dark:hover:to-emerald-800/30 rounded-lg transition-all duration-200 no-underline border border-green-200/50 dark:border-green-700/50 hover:border-green-300 dark:hover:border-green-600 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-green-100 dark:bg-green-800/50 rounded-lg mr-3 group-hover:bg-green-200 dark:group-hover:bg-green-700/50 transition-colors">
+                      <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{t('dashboard.actions.browseJobs')}</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.actions.browseJobs.description')}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-green-500 dark:group-hover:text-green-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </NavLink>
+                </motion.div>
                 
-                <NavLink 
-                  to="/profile/employer"
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group"
                 >
-                  <UserIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Company Profile</span>
-                </NavLink>
+                  <NavLink 
+                    to="/profile/employer"
+                    className="w-full flex items-center px-4 py-3 text-left bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-800/30 dark:hover:to-pink-800/30 rounded-lg transition-all duration-200 no-underline border border-purple-200/50 dark:border-purple-700/50 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-purple-100 dark:bg-purple-800/50 rounded-lg mr-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-700/50 transition-colors">
+                      <UserIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{t('dashboard.actions.companyProfile')}</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.actions.companyProfile.description')}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </NavLink>
+                </motion.div>
                 
-                <NavLink 
-                  to="/change-password"
-                  className="w-full flex items-center px-4 py-3 text-left bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors no-underline"
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group"
                 >
-                  <CogIcon className="w-5 h-5 text-gray-400 dark:text-gray-300 mr-3" />
-                  <span className="text-gray-700 dark:text-gray-200">Change Password</span>
-                </NavLink>
+                  <NavLink 
+                    to="/change-password"
+                    className="w-full flex items-center px-4 py-3 text-left bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 hover:from-orange-100 hover:to-red-100 dark:hover:from-orange-800/30 dark:hover:to-red-800/30 rounded-lg transition-all duration-200 no-underline border border-orange-200/50 dark:border-orange-700/50 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-orange-100 dark:bg-orange-800/50 rounded-lg mr-3 group-hover:bg-orange-200 dark:group-hover:bg-orange-700/50 transition-colors">
+                      <CogIcon className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{t('dashboard.actions.changePassword')}</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('dashboard.actions.changePassword.description')}</p>
+                    </div>
+                    <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-orange-500 dark:group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </NavLink>
+                </motion.div>
               </div>
             </motion.div>
 

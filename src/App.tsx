@@ -38,6 +38,9 @@ const JobManagement = lazy(() => import('./pages/JobManagement'))
 // Lazy load application components
 const MyApplications = lazy(() => import('./pages/MyApplications'))
 
+// Lazy load CV components
+const CVPage = lazy(() => import('./pages/CVPage'))
+
 
 function App() {
   return (
@@ -121,10 +124,10 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Application routes */}
-            <Route path="/applications" element={
+            {/* CV routes */}
+            <Route path="/resume" element={
               <ProtectedRoute requireAuth={true} requireProfile={true}>
-                <MyApplications />
+                <CVPage />
               </ProtectedRoute>
             } />
             
